@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --color-rotary: #17458f;
+  --color-rotary-fonce: #0f2f63;
+  --color-rotary-clair: #e8eef8;
+  --color-or: #f7a81b;
+  --color-encre: #17233c;
+  --color-gris: #5b6475;
+  --color-fond: #f4f6fa;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-fond);
+  color: var(--color-encre);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer components {
+  .champ {
+    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-encre outline-none transition
+      focus:border-rotary focus:ring-2 focus:ring-rotary/20 disabled:bg-slate-100 disabled:text-gris;
+  }
+}

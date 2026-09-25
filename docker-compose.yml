@@ -1,0 +1,71 @@
+# Gestion Liste de Présence – Commission Nationale Formation
+# Production (Dockploy) : aucun port publié, l'accès public passe uniquement par le tunnel Cloudflare.
+# Test local : docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+
+name: cnap-attendance
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cnap_attendance}
+      POSTGRES_USER: ${POSTGRES_USER:-cnap}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD est requis}
+      TZ: Africa/Abidjan
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: Host=db;Port=5432;Database=${POSTGRES_DB:-cnap_attendance};Username=${POSTGRES_USER:-cnap};Password=${POSTGRES_PASSWORD}
+      Jwt__Secret: ${JWT_SECRET:?JWT_SECRET est requis (32 caractères minimum)}
+      Jwt__CookieSecure: ${COOKIE_SECURE:-true}
+      Cors__Origines: ${PUBLIC_URL:?PUBLIC_URL est requis}
+      Database__MigrateOnStartup: "true"
+      Seed__AdminEmail: ${ADMIN_EMAIL:-}
+      Seed__AdminMotDePasse: ${ADMIN_PASSWORD:-}
+      Seed__ReinitialiserAdmin: ${ADMIN_RESET:-false}
+      Seed__DonneesDemo: ${SEED_DONNEES_DEMO:-true}
+      RateLimiting__PublicParMinute: ${RATE_LIMIT_PUBLIC_PAR_MINUTE:-300}
+      Smtp__Hote: ${SMTP_HOST:-}
+      Smtp__Port: ${SMTP_PORT:-587}
+      Smtp__Utilisateur: ${SMTP_USER:-}
+      Smtp__MotDePasse: ${SMTP_PASSWORD:-}
+      Smtp__ExpediteurEmail: ${SMTP_FROM_EMAIL:-}
+      Smtp__ExpediteurNom: ${SMTP_FROM_NAME:-Commission Nationale Formation}
+      Smtp__UtiliserTls: ${SMTP_TLS:-true}
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        API_INTERNAL_URL: http://backend:8080
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      frontend:
+        condition: service_healthy
+
+volumes:
+  pgdata:

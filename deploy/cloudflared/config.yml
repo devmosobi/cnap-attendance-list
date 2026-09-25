@@ -1,0 +1,20 @@
+# Variante « tunnel géré localement » (fichier de configuration).
+# La méthode recommandée (jeton + routes configurées dans le tableau de bord Cloudflare)
+# est décrite dans le README ; ce fichier n'est utile que si vous gérez le tunnel via cloudflared CLI.
+#
+# Utilisation : monter ce fichier et le fichier d'identifiants dans le conteneur cloudflared, puis
+#   command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+
+tunnel: <UUID-DU-TUNNEL>
+credentials-file: /etc/cloudflared/<UUID-DU-TUNNEL>.json
+
+ingress:
+  # L'API est routée directement vers le backend : l'en-tête CF-Connecting-IP
+  # (IP réelle du participant) lui parvient intact pour le rate limiting.
+  - hostname: ef2026-cnap-ci.rotary-district9101.org
+    path: ^/api/
+    service: http://backend:8080
+  # Tout le reste (page de scan /attendance=…, console /admin) vers le frontend.
+  - hostname: ef2026-cnap-ci.rotary-district9101.org
+    service: http://frontend:3000
+  - service: http_status:404

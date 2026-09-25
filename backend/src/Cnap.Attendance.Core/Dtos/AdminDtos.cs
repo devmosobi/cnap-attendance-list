@@ -1,0 +1,124 @@
+namespace Cnap.Attendance.Core.Dtos;
+
+public record PageResultat<T>(IReadOnlyList<T> Items, int Total, int Page, int Taille);
+
+// Séminaires
+public record SeminaireDto(Guid Id, string Designation, string? Description, bool EstActif, int NombreSessions, int NombreInscrits);
+
+public record SeminaireRequest(string Designation, string? Description, bool EstActif);
+
+public record ActivationRequest(bool EstActif);
+
+// Sessions
+public record SessionDto(
+    Guid Id,
+    Guid SeminaireId,
+    string Seminaire,
+    string Designation,
+    DateTimeOffset HeureDebut,
+    DateTimeOffset HeureFin,
+    string? Description,
+    bool EstActif,
+    int NombrePresences);
+
+public record SessionRequest(Guid SeminaireId, string Designation, DateTimeOffset HeureDebut, DateTimeOffset HeureFin, string? Description, bool EstActif);
+
+// Clubs
+public record ClubDto(string Code, string Nom, bool EstActif, int NombreInscrits);
+
+public record ClubCreationRequest(string Code, string Nom, bool EstActif);
+
+public record ClubModificationRequest(string Nom, bool EstActif);
+
+// QR Codes
+public record QrCodeFiltre(string? Statut, Guid? SeminaireId, string? ClubCode, string? Recherche);
+
+public record QrCodeListeDto(
+    string Code,
+    string Statut,
+    string? NomComplet,
+    string? Email,
+    string? ClubCode,
+    string? Club,
+    Guid? SeminaireId,
+    string? Seminaire,
+    DateTimeOffset? DateActivation,
+    int NombrePresences);
+
+public record QrCodeDetailDto(
+    string Code,
+    string Statut,
+    string? NomComplet,
+    string? Email,
+    string? ClubCode,
+    string? Club,
+    Guid? SeminaireId,
+    string? Seminaire,
+    DateTimeOffset? DateActivation,
+    IReadOnlyList<PresenceHistoriqueDto> Presences);
+
+public record PresenceHistoriqueDto(Guid Id, Guid SessionId, string Session, string Seminaire, DateTimeOffset HeureDePointage);
+
+public record ModifierParticipantRequest(string NomComplet, string Email, string ClubCode);
+
+public record ImportResultatDto(int Lignes, int Crees, int Existants, IReadOnlyList<string> Erreurs);
+
+// Présences
+public record PresenceFiltre(Guid? SessionId, Guid? SeminaireId, string? ClubCode, DateTimeOffset? Du, DateTimeOffset? Au, string? Recherche);
+
+public record PresenceListeDto(
+    Guid Id,
+    string QrCode,
+    string? NomComplet,
+    string? Email,
+    string? ClubCode,
+    string? Club,
+    Guid SessionId,
+    string Session,
+    string Seminaire,
+    DateTimeOffset HeureDePointage);
+
+// Rapports
+public record RapportLigneDto(string Cle, string Libelle, int Valeur);
+
+// Paramètres SMTP
+public record ParametresSmtpDto(
+    string Hote,
+    int Port,
+    string? Utilisateur,
+    bool MotDePasseDefini,
+    string ExpediteurEmail,
+    string ExpediteurNom,
+    bool UtiliserTls,
+    bool EstActif);
+
+/// <summary>MotDePasse null ou vide = conserver le mot de passe existant.</summary>
+public record ParametresSmtpRequest(
+    string Hote,
+    int Port,
+    string? Utilisateur,
+    string? MotDePasse,
+    string ExpediteurEmail,
+    string ExpediteurNom,
+    bool UtiliserTls,
+    bool EstActif);
+
+public record EmailTestRequest(string Destinataire);
+
+public record FileEmailStatsDto(int EnAttente, int Envoyes, int Echecs, string? DerniereErreur);
+
+// Utilisateurs
+public record UtilisateurDto(Guid Id, string Email, string NomComplet, string Role, bool EstActif, bool DoitChangerMotDePasse);
+
+public record UtilisateurCreationRequest(string Email, string NomComplet, string Role, string MotDePasse);
+
+public record UtilisateurModificationRequest(string NomComplet, string Role, bool EstActif);
+
+public record ReinitialiserMotDePasseRequest(string NouveauMotDePasse);
+
+// Authentification
+public record LoginRequest(string Email, string MotDePasse);
+
+public record ChangerMotDePasseRequest(string MotDePasseActuel, string NouveauMotDePasse);
+
+public record UtilisateurConnecteDto(Guid Id, string Email, string NomComplet, string Role, bool DoitChangerMotDePasse);

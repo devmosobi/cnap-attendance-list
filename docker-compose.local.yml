@@ -1,0 +1,29 @@
+# Surcharge pour tester toute la stack sur Docker Desktop, sans tunnel Cloudflare :
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+# Application : http://localhost:3000  ·  Emails capturés par Mailpit : http://localhost:8025
+
+services:
+  db:
+    ports:
+      - "5433:5432"
+
+  backend:
+    environment:
+      Jwt__CookieSecure: "false"
+      Smtp__Hote: mailpit
+      Smtp__Port: "1025"
+      Smtp__UtiliserTls: "false"
+      Smtp__ExpediteurEmail: formation@rotary-district9101.org
+
+  frontend:
+    ports:
+      - "3000:3000"
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
+
+  cloudflared:
+    # Désactivé en local (le profil « tunnel » n'est jamais activé ici).
+    profiles: ["tunnel"]
