@@ -21,7 +21,8 @@ public class QrCodeService(AppDbContext db, TimeProvider horloge)
                 q.Club != null ? q.Club.Nom : null, q.SeminaireId,
                 q.Seminaire != null ? q.Seminaire.Designation : null, q.DateActivation,
                 q.Presences.OrderBy(p => p.HeureDePointage)
-                    .Select(p => new PresenceHistoriqueDto(p.Id, p.SessionId, p.Session.Designation, p.Session.Seminaire.Designation, p.HeureDePointage))
+                    .Select(p => new PresenceHistoriqueDto(p.Id, p.SessionId, p.Session.Designation, p.Session.Seminaire.Designation, p.HeureDePointage,
+                        p.ResultatPosition, p.DistanceMetres))
                     .ToList()))
             .FirstOrDefaultAsync(ct);
         return qr ?? throw new IntrouvableException("QR Code introuvable.");

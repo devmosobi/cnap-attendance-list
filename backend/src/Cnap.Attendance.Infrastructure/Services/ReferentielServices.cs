@@ -13,13 +13,15 @@ public class SeminaireService(AppDbContext db, TimeProvider horloge)
         db.Seminaires.AsNoTracking()
             .OrderByDescending(s => s.EstActif).ThenBy(s => s.Designation)
             .Select(s => new SeminaireDto(s.Id, s.Designation, s.Description, s.EstActif,
-                s.Sessions.Count, db.QrCodes.Count(q => q.SeminaireId == s.Id)))
+                s.Sessions.Count, db.QrCodes.Count(q => q.SeminaireId == s.Id),
+                s.ControlePosition, s.Latitude, s.Longitude, s.RayonMetres))
             .ToListAsync(ct);
 
     public async Task<SeminaireDto> ObtenirAsync(Guid id, CancellationToken ct) =>
         await db.Seminaires.AsNoTracking().Where(s => s.Id == id)
             .Select(s => new SeminaireDto(s.Id, s.Designation, s.Description, s.EstActif,
-                s.Sessions.Count, db.QrCodes.Count(q => q.SeminaireId == s.Id)))
+                s.Sessions.Count, db.QrCodes.Count(q => q.SeminaireId == s.Id),
+                s.ControlePosition, s.Latitude, s.Longitude, s.RayonMetres))
             .FirstOrDefaultAsync(ct)
         ?? throw new IntrouvableException("Séminaire introuvable.");
 
@@ -35,6 +37,7 @@ public class SeminaireService(AppDbContext db, TimeProvider horloge)
             CreatedAt = maintenant,
             UpdatedAt = maintenant
         };
+        AppliquerLieu(seminaire, requete);
         db.Seminaires.Add(seminaire);
         await db.SaveChangesAsync(ct);
         return await ObtenirAsync(seminaire.Id, ct);
@@ -46,6 +49,7 @@ public class SeminaireService(AppDbContext db, TimeProvider horloge)
         seminaire.Designation = requete.Designation.Trim();
         seminaire.Description = Nettoyer(requete.Description);
         seminaire.EstActif = requete.EstActif;
+        AppliquerLieu(seminaire, requete);
         seminaire.UpdatedAt = horloge.GetUtcNow();
         await db.SaveChangesAsync(ct);
         return await ObtenirAsync(id, ct);
@@ -71,6 +75,14 @@ public class SeminaireService(AppDbContext db, TimeProvider horloge)
 
     private async Task<Seminaire> Charger(Guid id, CancellationToken ct) =>
         await db.Seminaires.FirstOrDefaultAsync(s => s.Id == id, ct) ?? throw new IntrouvableException("Séminaire introuvable.");
+
+    private static void AppliquerLieu(Seminaire seminaire, SeminaireRequest requete)
+    {
+        seminaire.ControlePosition = requete.ControlePosition;
+        seminaire.Latitude = requete.Latitude;
+        seminaire.Longitude = requete.Longitude;
+        seminaire.RayonMetres = requete.RayonMetres;
+    }
 
     internal static string? Nettoyer(string? valeur) => string.IsNullOrWhiteSpace(valeur) ? null : valeur.Trim();
 }

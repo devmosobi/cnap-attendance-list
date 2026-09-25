@@ -9,11 +9,19 @@ public class SeminaireConfiguration : IEntityTypeConfiguration<Seminaire>
 {
     public void Configure(EntityTypeBuilder<Seminaire> b)
     {
-        b.ToTable("seminaires");
+        b.ToTable("seminaires", t =>
+        {
+            t.HasCheckConstraint("ck_seminaires_rayon", $"rayon_metres BETWEEN {Seminaire.RayonMinimumMetres} AND {Seminaire.RayonMaximumMetres}");
+            t.HasCheckConstraint("ck_seminaires_controle_position",
+                "controle_position = 'Desactive' OR (latitude IS NOT NULL AND longitude IS NOT NULL)");
+        });
         b.HasKey(x => x.Id);
         b.Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
         b.Property(x => x.Designation).HasMaxLength(200).IsRequired();
         b.Property(x => x.EstActif).HasDefaultValue(false).ValueGeneratedNever();
+        b.Property(x => x.ControlePosition).HasConversion<string>().HasMaxLength(20)
+            .HasDefaultValue(ControlePosition.Desactive).ValueGeneratedNever();
+        b.Property(x => x.RayonMetres).HasDefaultValue(200).ValueGeneratedNever();
         b.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
         b.Property(x => x.UpdatedAt).HasDefaultValueSql("now()");
         b.HasIndex(x => x.EstActif);
@@ -85,6 +93,8 @@ public class PresenceConfiguration : IEntityTypeConfiguration<Presence>
         b.Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
         b.Property(x => x.QrCode).HasMaxLength(20);
         b.Property(x => x.HeureDePointage).HasDefaultValueSql("now()");
+        b.Property(x => x.ResultatPosition).HasConversion<string>().HasMaxLength(20)
+            .HasDefaultValue(ResultatPosition.NonControle).ValueGeneratedNever();
         b.HasOne(x => x.QrCodeNavigation).WithMany(q => q.Presences).HasForeignKey(x => x.QrCode).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.Session).WithMany(s => s.Presences).HasForeignKey(x => x.SessionId).OnDelete(DeleteBehavior.Restrict);
         // Règle métier centrale : une seule présence par QR Code et par session.

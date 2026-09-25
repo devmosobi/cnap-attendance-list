@@ -57,6 +57,18 @@ public partial class ScanService(AppDbContext db, TimeProvider horloge, ILogger<
         if (session.SeminaireId != requete.SeminaireId)
             throw new RegleMetierException("La session choisie n'appartient pas au séminaire sélectionné.");
 
+        // Contrôle du lieu, avant toute écriture : en mode « Bloquer », rien n'est enregistré hors zone.
+        var position = ControleLieu.Evaluer(session.Seminaire, requete.Position);
+        if (session.Seminaire.ControlePosition == ControlePosition.Bloquer)
+        {
+            if (position.Resultat == ResultatPosition.NonLocalise)
+                throw new RegleMetierException(
+                    "Pour valider votre présence, autorisez la localisation de votre téléphone : elle sert uniquement à vérifier que vous êtes sur le lieu de la formation.");
+            if (position.Resultat == ResultatPosition.HorsZone)
+                throw new RegleMetierException(
+                    $"Vous semblez être à {ControleLieu.FormaterDistance(position.DistanceMetres ?? 0)} du lieu de la formation. La présence ne peut être validée que sur place.");
+        }
+
         var maintenant = horloge.GetUtcNow();
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -95,7 +107,10 @@ public partial class ScanService(AppDbContext db, TimeProvider horloge, ILogger<
             Id = Guid.NewGuid(),
             QrCode = code,
             SessionId = session.Id,
-            HeureDePointage = maintenant
+            HeureDePointage = maintenant,
+            ResultatPosition = position.Resultat,
+            DistanceMetres = position.DistanceMetres,
+            PrecisionMetres = position.PrecisionMetres
         };
         db.Presences.Add(presence);
 
@@ -127,7 +142,8 @@ public partial class ScanService(AppDbContext db, TimeProvider horloge, ILogger<
             throw new ConflitException(MessageDejaPointe(heure ?? maintenant));
         }
 
-        logger.LogInformation("Présence enregistrée : {Code} session {SessionId} (premier scan : {PremierScan})", code, session.Id, premierScan);
+        logger.LogInformation("Présence enregistrée : {Code} session {SessionId} (premier scan : {PremierScan}, lieu : {Lieu} {Distance} m)",
+            code, session.Id, premierScan, position.Resultat, position.DistanceMetres);
 
         return new PresenceConfirmationDto(qr.NomComplet!, session.Seminaire.Designation, session.Designation, maintenant, premierScan);
     }
@@ -141,6 +157,7 @@ public partial class ScanService(AppDbContext db, TimeProvider horloge, ILogger<
             {
                 s.Id,
                 s.Designation,
+                s.ControlePosition,
                 Sessions = s.Sessions.Where(x => x.EstActif).OrderBy(x => x.HeureDebut)
                     .Select(x => new SessionPublicDto(x.Id, x.Designation, x.HeureDebut, x.HeureFin)).ToList()
             })
@@ -149,7 +166,7 @@ public partial class ScanService(AppDbContext db, TimeProvider horloge, ILogger<
         // Un séminaire sans session ouverte n'offre rien à pointer : on ne le propose pas.
         return seminaires
             .Where(s => s.Sessions.Count > 0)
-            .Select(s => new SeminairePublicDto(s.Id, s.Designation, s.Sessions))
+            .Select(s => new SeminairePublicDto(s.Id, s.Designation, s.ControlePosition, s.Sessions))
             .ToList();
     }
 

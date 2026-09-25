@@ -1,10 +1,12 @@
 "use client";
 
 import { Eye, RefreshCw } from "lucide-react";
+import { BadgeLieu } from "@/components/badge-lieu";
 import { TableDonnees } from "@/components/table-donnees";
 import { ActionIcone, Bouton, Carte, EnTete } from "@/components/ui";
 import { dateHeure } from "@/lib/format";
 import { useDonnees } from "@/lib/hooks";
+import { LIBELLES_RESULTAT } from "@/lib/lieu";
 import type { PresenceListe } from "@/lib/types";
 
 export default function PagePresences() {
@@ -40,6 +42,21 @@ export default function PagePresences() {
               texte: (p) => dateHeure(p.heureDePointage),
               type: "date",
               classe: "whitespace-nowrap tabular-nums",
+            },
+            {
+              cle: "lieu",
+              titre: "Lieu",
+              valeur: (p) => LIBELLES_RESULTAT[p.resultatPosition],
+              filtre: "liste",
+              rendu: (p) => <BadgeLieu resultat={p.resultatPosition} distance={p.distanceMetres} />,
+            },
+            {
+              cle: "distance",
+              titre: "Distance (m)",
+              valeur: (p) => p.distanceMetres ?? "",
+              texte: (p) => (p.distanceMetres === null ? "" : String(p.distanceMetres)),
+              type: "nombre",
+              filtre: false,
             },
             { cle: "code", titre: "QR Code", valeur: (p) => p.qrCode, classe: "font-mono text-xs" },
           ]}

@@ -8,4 +8,17 @@ public class Presence
     public Guid SessionId { get; set; }
     public Session Session { get; set; } = null!;
     public DateTimeOffset HeureDePointage { get; set; }
+
+    /// <summary>Résultat du contrôle de position. Seules la distance au lieu et la précision sont conservées, pas les coordonnées.</summary>
+    public ResultatPosition ResultatPosition { get; set; } = ResultatPosition.NonControle;
+    public int? DistanceMetres { get; set; }
+    public int? PrecisionMetres { get; set; }
+}
+
+public enum ResultatPosition
+{
+    NonControle,
+    SurPlace,
+    HorsZone,
+    NonLocalise
 }

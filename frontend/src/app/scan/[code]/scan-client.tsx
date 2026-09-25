@@ -1,9 +1,11 @@
 "use client";
 
+import { MapPin } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { dateLongue, heure, plage } from "@/lib/format";
+import { obtenirPosition } from "@/lib/lieu";
 import type { PresenceConfirmation, ScanEtat } from "@/lib/types";
 
 type Etat =
@@ -87,11 +89,13 @@ function Formulaire({
   const [clubCode, setClubCode] = useState("");
   const [nomComplet, setNomComplet] = useState("");
   const [email, setEmail] = useState("");
-  const [envoi, setEnvoi] = useState(false);
+  const [etape, setEtape] = useState<"saisie" | "localisation" | "envoi">("saisie");
   const [erreur, setErreur] = useState<string | null>(null);
 
   const dejaPointees = useMemo(() => new Map(donnees.presences.map((p) => [p.sessionId, p.heureDePointage])), [donnees.presences]);
-  const sessions = seminaires.find((s) => s.id === seminaireId)?.sessions ?? [];
+  const seminaire = seminaires.find((s) => s.id === seminaireId);
+  const sessions = seminaire?.sessions ?? [];
+  const controleLieu = seminaire !== undefined && seminaire.controlePosition !== "Desactive";
 
   // Présélection de la session si une seule reste disponible.
   useEffect(() => {
@@ -121,20 +125,27 @@ function Formulaire({
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setErreur("Veuillez saisir une adresse email valide.");
     }
 
-    setEnvoi(true);
     try {
+      // Position demandée uniquement si le séminaire contrôle le lieu ; un refus n'empêche pas l'envoi,
+      // c'est le serveur qui décide selon le mode (signaler ou refuser).
+      let position = null;
+      if (controleLieu) {
+        setEtape("localisation");
+        const p = await obtenirPosition();
+        if (p) position = { latitude: p.latitude, longitude: p.longitude, precision: p.precision };
+      }
+      setEtape("envoi");
+      const identite = premierScan ? { clubCode, nomComplet: nomComplet.trim(), email: email.trim() } : {};
       const confirmation = await api<PresenceConfirmation>(`/api/public/scan/${code}/presences`, {
         method: "POST",
         public: true,
-        body: premierScan
-          ? { seminaireId, sessionId, clubCode, nomComplet: nomComplet.trim(), email: email.trim() }
-          : { seminaireId, sessionId },
+        body: { seminaireId, sessionId, ...identite, position },
       });
       onConfirme(confirmation);
     } catch (e) {
       setErreur(e instanceof Error ? e.message : "Erreur inattendue.");
     } finally {
-      setEnvoi(false);
+      setEtape("saisie");
     }
   };
 
@@ -263,9 +274,18 @@ function Formulaire({
           Votre présence est déjà enregistrée pour toutes les sessions ouvertes de ce séminaire.
         </div>
       ) : (
-        <BoutonPrincipal type="submit" disabled={envoi}>
-          {envoi ? "Validation en cours…" : "Valider ma présence"}
-        </BoutonPrincipal>
+        <>
+          <BoutonPrincipal type="submit" disabled={etape !== "saisie"}>
+            {etape === "localisation" ? "Vérification de votre position…" : etape === "envoi" ? "Validation en cours…" : "Valider ma présence"}
+          </BoutonPrincipal>
+          {controleLieu && (
+            <p className="-mt-2 flex items-start gap-1.5 text-xs text-gris">
+              <MapPin size={14} aria-hidden className="mt-px shrink-0 text-rotary" />
+              Votre position sera demandée pour vérifier que vous êtes sur le lieu de la formation. Seule la distance au lieu est
+              enregistrée.
+            </p>
+          )}
+        </>
       )}
     </form>
   );

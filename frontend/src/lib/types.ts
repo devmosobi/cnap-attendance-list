@@ -1,6 +1,8 @@
 // Public
 export type SessionPublic = { id: string; designation: string; heureDebut: string; heureFin: string };
-export type SeminairePublic = { id: string; designation: string; sessions: SessionPublic[] };
+export type ControlePosition = "Desactive" | "Signaler" | "Bloquer";
+export type ResultatPosition = "NonControle" | "SurPlace" | "HorsZone" | "NonLocalise";
+export type SeminairePublic = { id: string; designation: string; controlePosition: ControlePosition; sessions: SessionPublic[] };
 export type ClubOption = { code: string; nom: string };
 export type PresencePublic = { sessionId: string; session: string; heureDePointage: string };
 export type ScanEtat = {
@@ -21,7 +23,18 @@ export type PresenceConfirmation = {
 
 // Admin
 export type UtilisateurConnecte = { id: string; email: string; nomComplet: string; role: string; doitChangerMotDePasse: boolean };
-export type Seminaire = { id: string; designation: string; description: string | null; estActif: boolean; nombreSessions: number; nombreInscrits: number };
+export type Seminaire = {
+  id: string;
+  designation: string;
+  description: string | null;
+  estActif: boolean;
+  nombreSessions: number;
+  nombreInscrits: number;
+  controlePosition: ControlePosition;
+  latitude: number | null;
+  longitude: number | null;
+  rayonMetres: number;
+};
 export type Session = {
   id: string;
   seminaireId: string;
@@ -46,7 +59,15 @@ export type QrCodeListe = {
   dateActivation: string | null;
   nombrePresences: number;
 };
-export type PresenceHistorique = { id: string; sessionId: string; session: string; seminaire: string; heureDePointage: string };
+export type PresenceHistorique = {
+  id: string;
+  sessionId: string;
+  session: string;
+  seminaire: string;
+  heureDePointage: string;
+  resultatPosition: ResultatPosition;
+  distanceMetres: number | null;
+};
 export type QrCodeDetail = Omit<QrCodeListe, "nombrePresences"> & { presences: PresenceHistorique[] };
 export type ImportResultat = { lignes: number; crees: number; existants: number; erreurs: string[] };
 export type PresenceListe = {
@@ -60,6 +81,8 @@ export type PresenceListe = {
   session: string;
   seminaire: string;
   heureDePointage: string;
+  resultatPosition: ResultatPosition;
+  distanceMetres: number | null;
 };
 export type RapportLigne = { cle: string; libelle: string; valeur: number };
 export type ParametresSmtp = {

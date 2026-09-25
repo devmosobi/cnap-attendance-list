@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { Pencil } from "lucide-react";
 import { use, useState } from "react";
+import { BadgeLieu } from "@/components/badge-lieu";
 import { TableDonnees } from "@/components/table-donnees";
 import { Alerte, Badge, Bouton, Carte, Chargement, Champ, EnTete, Modale } from "@/components/ui";
 import { api } from "@/lib/api";
 import { dateHeure } from "@/lib/format";
 import { useDonnees, useEstAdministrateur } from "@/lib/hooks";
+import { LIBELLES_RESULTAT } from "@/lib/lieu";
 import type { Club, QrCodeDetail } from "@/lib/types";
 
 export default function PageQrCode({ params }: { params: Promise<{ code: string }> }) {
@@ -63,6 +65,21 @@ export default function PageQrCode({ params }: { params: Promise<{ code: string 
                   texte: (p) => dateHeure(p.heureDePointage),
                   type: "date",
                   classe: "whitespace-nowrap tabular-nums",
+                },
+                {
+                  cle: "lieu",
+                  titre: "Lieu",
+                  valeur: (p) => LIBELLES_RESULTAT[p.resultatPosition],
+                  filtre: "liste",
+                  rendu: (p) => <BadgeLieu resultat={p.resultatPosition} distance={p.distanceMetres} />,
+                },
+                {
+                  cle: "distance",
+                  titre: "Distance (m)",
+                  valeur: (p) => p.distanceMetres ?? "",
+                  texte: (p) => (p.distanceMetres === null ? "" : String(p.distanceMetres)),
+                  type: "nombre",
+                  filtre: false,
                 },
               ]}
             />

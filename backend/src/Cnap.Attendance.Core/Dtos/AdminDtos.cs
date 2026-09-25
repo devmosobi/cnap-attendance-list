@@ -1,9 +1,28 @@
+using Cnap.Attendance.Core.Entities;
+
 namespace Cnap.Attendance.Core.Dtos;
 
 // Séminaires
-public record SeminaireDto(Guid Id, string Designation, string? Description, bool EstActif, int NombreSessions, int NombreInscrits);
+public record SeminaireDto(
+    Guid Id,
+    string Designation,
+    string? Description,
+    bool EstActif,
+    int NombreSessions,
+    int NombreInscrits,
+    ControlePosition ControlePosition,
+    double? Latitude,
+    double? Longitude,
+    int RayonMetres);
 
-public record SeminaireRequest(string Designation, string? Description, bool EstActif);
+public record SeminaireRequest(
+    string Designation,
+    string? Description,
+    bool EstActif,
+    ControlePosition ControlePosition = ControlePosition.Desactive,
+    double? Latitude = null,
+    double? Longitude = null,
+    int RayonMetres = 200);
 
 public record ActivationRequest(bool EstActif);
 
@@ -55,7 +74,14 @@ public record QrCodeDetailDto(
     DateTimeOffset? DateActivation,
     IReadOnlyList<PresenceHistoriqueDto> Presences);
 
-public record PresenceHistoriqueDto(Guid Id, Guid SessionId, string Session, string Seminaire, DateTimeOffset HeureDePointage);
+public record PresenceHistoriqueDto(
+    Guid Id,
+    Guid SessionId,
+    string Session,
+    string Seminaire,
+    DateTimeOffset HeureDePointage,
+    ResultatPosition ResultatPosition,
+    int? DistanceMetres);
 
 public record ModifierParticipantRequest(string NomComplet, string Email, string ClubCode);
 
@@ -74,7 +100,9 @@ public record PresenceListeDto(
     Guid SessionId,
     string Session,
     string Seminaire,
-    DateTimeOffset HeureDePointage);
+    DateTimeOffset HeureDePointage,
+    ResultatPosition ResultatPosition,
+    int? DistanceMetres);
 
 // Rapports
 public record RapportLigneDto(string Cle, string Libelle, int Valeur);

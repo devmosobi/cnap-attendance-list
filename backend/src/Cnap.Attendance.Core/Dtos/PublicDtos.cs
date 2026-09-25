@@ -1,3 +1,6 @@
+using Cnap.Attendance.Core.Common;
+using Cnap.Attendance.Core.Entities;
+
 namespace Cnap.Attendance.Core.Dtos;
 
 public record ScanEtatDto(
@@ -10,7 +13,8 @@ public record ScanEtatDto(
 
 public record ParticipantDto(string NomComplet, string EmailMasque, string? ClubNom);
 
-public record SeminairePublicDto(Guid Id, string Designation, IReadOnlyList<SessionPublicDto> Sessions);
+/// <summary>ControlePosition indique à la page s'il faut demander la position du téléphone.</summary>
+public record SeminairePublicDto(Guid Id, string Designation, ControlePosition ControlePosition, IReadOnlyList<SessionPublicDto> Sessions);
 
 public record SessionPublicDto(Guid Id, string Designation, DateTimeOffset HeureDebut, DateTimeOffset HeureFin);
 
@@ -23,7 +27,8 @@ public record ValiderPresenceRequest(
     Guid SessionId,
     string? ClubCode,
     string? NomComplet,
-    string? Email);
+    string? Email,
+    PositionGps? Position = null);
 
 public record PresenceConfirmationDto(
     string NomComplet,

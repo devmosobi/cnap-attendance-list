@@ -63,6 +63,28 @@ docker-compose.local.yml               surcharge pour tester sur Docker Desktop
   que la présence, puis envoyé en tâche de fond avec reprises espacées (1 min, 5 min, 15 min, 1 h, 4 h).
 - Les heures sont stockées en UTC et affichées dans le fuseau `Africa/Abidjan` (UTC+0).
 
+### Contrôle du lieu de la formation
+
+Pour vérifier que les participants valident leur présence sur place, chaque séminaire peut activer un contrôle de
+position (Séminaires > Modifier > « Lieu de la formation ») :
+
+| Mode | Effet |
+|---|---|
+| Désactivé | La position n'est pas demandée. |
+| Signaler les présences hors zone | La présence est toujours enregistrée, marquée « Sur place », « Hors zone » ou « Non localisée ». |
+| Refuser les présences hors zone | La validation est refusée hors zone ou si le participant ne partage pas sa position. |
+
+- Le lieu se définit par ses coordonnées GPS (copiées depuis Google Maps ou prises sur place avec « Utiliser ma
+  position actuelle ») et un rayon de 50 à 500 m. Une marge de 100 m au plus s'ajoute selon la précision annoncée par
+  le téléphone, le GPS étant moins précis en intérieur.
+- Le parcours du participant ne change pas : sa position est demandée au clic sur « Valider ma présence », avec une
+  mention expliquant pourquoi. Seules la distance au lieu et la précision sont enregistrées, jamais les coordonnées.
+- La colonne « Lieu » des présences permet de filtrer et d'exporter les présences à vérifier.
+- Commencer par le mode « Signaler » : il ne bloque aucun participant et montre si des présences hors zone existent.
+  La position d'un téléphone peut être falsifiée avec une application dédiée : le contrôle dissuade et trace, il ne
+  constitue pas une preuve absolue.
+- Un même téléphone peut valider plusieurs billets (aide aux participants peu à l'aise avec le numérique).
+
 ## Test local complet (Docker Desktop)
 
 ```bash

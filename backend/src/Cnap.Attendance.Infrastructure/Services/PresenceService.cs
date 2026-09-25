@@ -39,7 +39,8 @@ public class PresenceService(AppDbContext db)
             .Select(p => new PresenceListeDto(
                 p.Id, p.QrCode, p.QrCodeNavigation.NomComplet, p.QrCodeNavigation.Email, p.QrCodeNavigation.ClubCode,
                 p.QrCodeNavigation.Club != null ? p.QrCodeNavigation.Club.Nom : null,
-                p.SessionId, p.Session.Designation, p.Session.Seminaire.Designation, p.HeureDePointage));
+                p.SessionId, p.Session.Designation, p.Session.Seminaire.Designation, p.HeureDePointage,
+                p.ResultatPosition, p.DistanceMetres));
 }
 
 public class RapportService(AppDbContext db)
