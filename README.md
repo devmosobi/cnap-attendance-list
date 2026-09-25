@@ -9,7 +9,7 @@ Chaque participant dispose d'un billet imprimé portant un QR Code unique. En le
 |---|---|
 | Frontend | Next.js 15 (App Router, TypeScript, Tailwind CSS), sortie `standalone` |
 | Backend | ASP.NET Core Web API .NET 8, EF Core 8 (Code First), ASP.NET Core Identity + JWT |
-| Base de données | PostgreSQL 16 |
+| Base de données | PostgreSQL (serveur externe) |
 | Emails | SMTP (MailKit) via une table outbox traitée en tâche de fond |
 | Déploiement | Docker Compose sur Dockploy (domaines déclarés dans Dockploy, derrière le tunnel Cloudflare existant) |
 
@@ -18,14 +18,16 @@ Chaque participant dispose d'un billet imprimé portant un QR Code unique. En le
 ```
 Internet ──► Cloudflare ──► tunnel du serveur ──► Traefik (Dockploy) ──► frontend:3000 (Next.js)
                                                                             └── /api/* relayé en interne ──► backend:8080
-                                                                                                             └── db:5432
+                                                                                                             └── PostgreSQL externe
 ```
 
 - L'application ne dépend d'aucun nom de domaine : chaque domaine déclaré dans Dockploy sur le service `frontend`
   la sert en entier (page de scan, console, API sous `/api`). La page et l'API partagent donc toujours la même origine ;
   les jetons JWT circulent en cookies `httpOnly` (`SameSite=Lax`), propres à chaque domaine.
-- Aucun port n'est publié : seul le service `frontend` reçoit du trafic, via Traefik. Le backend et la base ne sont
-  joignables que sur le réseau Docker interne.
+- Aucun port n'est publié : seul le service `frontend` reçoit du trafic, via Traefik. Le backend n'est joignable que
+  sur le réseau Docker interne.
+- La base de données est un serveur PostgreSQL externe (variables `POSTGRES_*`) : le compose ne contient pas de
+  conteneur de base.
 - L'IP réelle du participant (`CF-Connecting-IP`, sinon `X-Forwarded-For`) est transmise jusqu'au backend pour la
   limitation de débit.
 - Le middleware Next.js réécrit en interne `/attendance=<code>` vers la page de scan : l'URL imprimée sur les billets
@@ -64,6 +66,7 @@ docker-compose.local.yml               surcharge pour tester sur Docker Desktop
 ```bash
 cp .env.example .env
 # Pour un test local, ajuster dans .env :
+#   POSTGRES_HOST=db          (PostgreSQL de test fourni par docker-compose.local.yml)
 #   COOKIE_SECURE=false
 #   et renseigner POSTGRES_PASSWORD, JWT_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
 
@@ -76,7 +79,8 @@ docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 | http://localhost:3000/admin | Console d'administration |
 | http://localhost:8025 | Mailpit : boîte de réception capturant tous les emails envoyés |
 
-La surcharge locale publie les ports et configure le SMTP vers Mailpit.
+La surcharge locale ajoute un PostgreSQL de test (jamais utilisé en production), publie les ports et configure le
+SMTP vers Mailpit.
 
 ## Première mise en service
 
@@ -100,7 +104,10 @@ et les domaines se déclarent dans Dockploy. Aucun jeton ni conteneur `cloudflar
 1. **Dans Dockploy** : créer un service **Docker Compose** pointant vers ce dépôt Git (branche `main`, fichier
    `docker-compose.yml`).
 2. Onglet **Environment** : saisir les variables de [.env.example](.env.example) avec des valeurs de production :
-   - `POSTGRES_PASSWORD` et `JWT_SECRET` : valeurs aléatoires fortes (`openssl rand -base64 48`) ;
+   - `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` : le serveur PostgreSQL
+     externe. La base doit exister (ou l'utilisateur doit avoir le droit `CREATEDB`) ; les tables sont créées au
+     démarrage. Le serveur doit être joignable depuis le conteneur `backend` ;
+   - `JWT_SECRET` : valeur aléatoire forte (`openssl rand -base64 48`) ;
    - `COOKIE_SECURE=true` ;
    - `ADMIN_EMAIL`, `ADMIN_PASSWORD`.
 3. Onglet **Domains** : ajouter chaque domaine sur le service **`frontend`**, port **`3000`**, chemin `/`, avec les
@@ -112,7 +119,7 @@ et les domaines se déclarent dans Dockploy. Aucun jeton ni conteneur `cloudflar
    | `sf2026-cnap-ci.rotary-district9101.org` (formation fondation) | `frontend` | 3000 |
    | `attendance-cnap-ci.rotary-district9101.org` (formations génériques) | `frontend` | 3000 |
 
-   Ne pas déclarer de domaine sur `backend` ni sur `db`.
+   Ne pas déclarer de domaine sur `backend`.
 4. Dans Cloudflare, faire pointer ces sous-domaines vers le tunnel existant, comme pour les autres applications.
 5. Déployer. Au démarrage, le backend applique les migrations puis crée les rôles, le compte administrateur et les
    données de démarrage (si les tables sont vides).
@@ -165,7 +172,7 @@ dotnet ef migrations script --idempotent -p src/Cnap.Attendance.Infrastructure -
 **Sauvegarde** :
 
 ```bash
-docker compose exec db pg_dump -U cnap -d cnap_attendance -Fc > sauvegarde-$(date +%Y%m%d-%H%M).dump
+pg_dump -h <POSTGRES_HOST> -p <POSTGRES_PORT> -U <POSTGRES_USER> -d <POSTGRES_DB> -Fc > sauvegarde-$(date +%Y%m%d-%H%M).dump
 ```
 
 ## Développement sans Docker

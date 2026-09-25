@@ -1,36 +1,19 @@
 # Gestion Liste de Présence – Commission Nationale Formation
 # Production (Dockploy) : aucun port publié. Les domaines se déclarent dans Dockploy (onglet Domains)
 # sur le service « frontend », port 3000 ; Next.js relaie /api vers le backend en interne.
+# Base de données : serveur PostgreSQL externe (variables POSTGRES_*).
 # Test local : docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 
 name: cnap-attendance
 
 services:
-  db:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-cnap_attendance}
-      POSTGRES_USER: ${POSTGRES_USER:-cnap}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD est requis}
-      TZ: Africa/Abidjan
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-
   backend:
     build:
       context: ./backend
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
     environment:
-      ConnectionStrings__Default: Host=db;Port=5432;Database=${POSTGRES_DB:-cnap_attendance};Username=${POSTGRES_USER:-cnap};Password=${POSTGRES_PASSWORD}
+      # Serveur PostgreSQL externe.
+      ConnectionStrings__Default: Host=${POSTGRES_HOST:?POSTGRES_HOST est requis};Port=${POSTGRES_PORT:-5432};Database=${POSTGRES_DB:?POSTGRES_DB est requis};Username=${POSTGRES_USER:?POSTGRES_USER est requis};Password=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD est requis};SSL Mode=${POSTGRES_SSL_MODE:-Prefer}
       Jwt__Secret: ${JWT_SECRET:?JWT_SECRET est requis (32 caractères minimum)}
       Jwt__CookieSecure: ${COOKIE_SECURE:-true}
       Cors__Origines: ${PUBLIC_URLS:-}
@@ -57,6 +40,3 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-
-volumes:
-  pgdata:
