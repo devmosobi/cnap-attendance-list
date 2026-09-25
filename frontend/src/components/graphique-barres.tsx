@@ -3,8 +3,19 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { RapportLigne } from "@/lib/types";
 
-/** Barres horizontales à une seule série : une teinte, pas de légende (le titre nomme la mesure). */
-export function GraphiqueBarres({ lignes, unite }: { lignes: RapportLigne[]; unite: string }) {
+/**
+ * Barres horizontales à une seule série : une teinte, pas de légende (le titre nomme la mesure).
+ * libelleAxe : texte court affiché sur l'axe ; le libellé complet reste dans l'infobulle.
+ */
+export function GraphiqueBarres({
+  lignes,
+  unite,
+  libelleAxe = (v) => v,
+}: {
+  lignes: RapportLigne[];
+  unite: string;
+  libelleAxe?: (libelle: string) => string;
+}) {
   if (lignes.length === 0) return <p className="py-8 text-center text-sm text-gris">Aucune donnée pour le moment.</p>;
   const hauteur = Math.max(160, lignes.length * 36 + 40);
   return (
@@ -20,7 +31,10 @@ export function GraphiqueBarres({ lignes, unite }: { lignes: RapportLigne[]; uni
             tick={{ fill: "#17233c", fontSize: 12 }}
             axisLine={{ stroke: "#c9cfdb" }}
             tickLine={false}
-            tickFormatter={(v: string) => (v.length > 26 ? `${v.slice(0, 25)}…` : v)}
+            tickFormatter={(v: string) => {
+              const court = libelleAxe(v);
+              return court.length > 26 ? `${court.slice(0, 25)}…` : court;
+            }}
           />
           <Tooltip
             cursor={{ fill: "#e8eef8" }}

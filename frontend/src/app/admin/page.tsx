@@ -3,17 +3,22 @@
 import { RefreshCw, Sheet } from "lucide-react";
 import { useRef, useState } from "react";
 import { GraphiqueBarres } from "@/components/graphique-barres";
+import { RapportLieuCarte, pourcentage, totauxLieu } from "@/components/rapport-lieu";
 import { TableDonnees } from "@/components/table-donnees";
 import { Alerte, Bouton, Carte, EnTete } from "@/components/ui";
 import { construireQuery } from "@/lib/api";
 import { exporterPdfSections, type SectionPdf } from "@/lib/export";
 import { useDonnees } from "@/lib/hooks";
-import type { RapportLigne, Seminaire } from "@/lib/types";
+import { LIBELLES_RESULTAT } from "@/lib/lieu";
+import type { RapportLieu, RapportLigne, ResultatPosition, Seminaire } from "@/lib/types";
 
-type DefinitionRapport = { titre: string; unite: string; colonne: string; nomFichier: string };
+type DefinitionRapport = { titre: string; unite: string; colonne: string; nomFichier: string; libelleAxe?: (libelle: string) => string };
+
+/** « Séminaire – Session » → « Session » sur l'axe du graphique. */
+const nomSession = (libelle: string) => libelle.split(" – ").slice(1).join(" – ") || libelle;
 
 const RAPPORTS = {
-  sessions: { titre: "Présences par session", unite: "Présences", colonne: "Session", nomFichier: "presences-par-session" },
+  sessions: { titre: "Présences par session", unite: "Présences", colonne: "Session", nomFichier: "presences-par-session", libelleAxe: nomSession },
   seminaires: { titre: "Inscrits par séminaire", unite: "Inscrits", colonne: "Séminaire", nomFichier: "inscrits-par-seminaire" },
   clubs: { titre: "Inscrits par club", unite: "Inscrits", colonne: "Club", nomFichier: "inscrits-par-club" },
 } satisfies Record<string, DefinitionRapport>;
@@ -25,6 +30,7 @@ export default function TableauDeBord() {
   const sessions = useDonnees<RapportLigne[]>(`/api/admin/rapports/presences-par-session${q}`);
   const parSeminaire = useDonnees<RapportLigne[]>("/api/admin/rapports/inscrits-par-seminaire");
   const clubs = useDonnees<RapportLigne[]>(`/api/admin/rapports/inscrits-par-club${q}`);
+  const lieu = useDonnees<RapportLieu[]>(`/api/admin/rapports/presences-par-lieu${q}`);
 
   const graphiqueSessions = useRef<HTMLDivElement>(null);
   const graphiqueSeminaires = useRef<HTMLDivElement>(null);
@@ -38,6 +44,7 @@ export default function TableauDeBord() {
     sessions.recharger();
     parSeminaire.recharger();
     clubs.recharger();
+    lieu.recharger();
   };
 
   const exporterPdf = async () => {
@@ -60,12 +67,33 @@ export default function TableauDeBord() {
           lignes: donnees.map((l) => [l.libelle, l.valeur]),
         };
       };
+      const t = totauxLieu(lieu.donnees);
+      const resultats: ResultatPosition[] = ["SurPlace", "HorsZone", "NonLocalise", "NonControle"];
+      const sectionsLieu: SectionPdf[] = [
+        {
+          titre: `Contrôle du lieu · ${t.total} présences`,
+          colonnes: [{ titre: "Résultat" }, { titre: "Présences", type: "nombre" }, { titre: "Part" }],
+          lignes: resultats.map((r) => [LIBELLES_RESULTAT[r], t[r], pourcentage(t[r], t.total)]),
+        },
+        {
+          titre: "Contrôle du lieu par session",
+          colonnes: [
+            { titre: "Session" },
+            { titre: "Sur place", type: "nombre" },
+            { titre: "Hors zone", type: "nombre" },
+            { titre: "Non localisée", type: "nombre" },
+            { titre: "Non contrôlé", type: "nombre" },
+          ],
+          lignes: (lieu.donnees ?? []).map((l) => [l.session, l.surPlace, l.horsZone, l.nonLocalise, l.nonControle]),
+        },
+      ];
       await exporterPdfSections({
         titre: "Tableau de bord",
         sousTitre: nomSeminaire ? `Séminaire : ${nomSeminaire}` : "Tous les séminaires",
         nomFichier: "tableau-de-bord",
         sections: [
           await section(RAPPORTS.sessions, sessions.donnees, graphiqueSessions.current),
+          ...sectionsLieu,
           await section(RAPPORTS.seminaires, parSeminaire.donnees, graphiqueSeminaires.current),
           await section(RAPPORTS.clubs, clubs.donnees, graphiqueClubs.current),
         ],
@@ -108,6 +136,7 @@ export default function TableauDeBord() {
       )}
       <div className="grid gap-5">
         <Rapport def={RAPPORTS.sessions} donnees={sessions} refGraphique={graphiqueSessions} filtre={nomSeminaire} />
+        <RapportLieuCarte lignes={lieu.donnees} erreur={lieu.erreur} filtre={nomSeminaire} />
         <div className="grid gap-5 lg:grid-cols-2">
           <Rapport def={RAPPORTS.seminaires} donnees={parSeminaire} refGraphique={graphiqueSeminaires} />
           <Rapport def={RAPPORTS.clubs} donnees={clubs} refGraphique={graphiqueClubs} filtre={nomSeminaire} />
@@ -135,7 +164,7 @@ function Rapport({
       {donnees && (
         <>
           <div ref={refGraphique} className="bg-white">
-            <GraphiqueBarres lignes={donnees} unite={def.unite} />
+            <GraphiqueBarres lignes={donnees} unite={def.unite} libelleAxe={def.libelleAxe} />
           </div>
           <details className="group mt-3 border-t border-slate-100 pt-3">
             <summary className="cursor-pointer text-sm font-semibold text-rotary select-none">

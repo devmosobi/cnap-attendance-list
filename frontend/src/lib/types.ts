@@ -85,6 +85,7 @@ export type PresenceListe = {
   distanceMetres: number | null;
 };
 export type RapportLigne = { cle: string; libelle: string; valeur: number };
+export type RapportLieu = { cle: string; session: string; surPlace: number; horsZone: number; nonLocalise: number; nonControle: number };
 export type ParametresSmtp = {
   hote: string;
   port: number;

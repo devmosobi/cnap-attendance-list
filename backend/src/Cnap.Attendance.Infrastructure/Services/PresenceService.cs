@@ -62,6 +62,30 @@ public class RapportService(AppDbContext db)
             .Select(s => new RapportLigneDto(s.Id.ToString(), s.Seminaire.Designation + " – " + s.Designation, s.Presences.Count))
             .ToListAsync(ct);
 
+    /// <summary>Présences par session et par résultat du contrôle du lieu (sessions sans présence incluses).</summary>
+    public async Task<List<RapportLieuDto>> PresencesParLieuAsync(Guid? seminaireId, CancellationToken ct)
+    {
+        var comptes = await db.Presences.AsNoTracking()
+            .Where(p => seminaireId == null || p.Session.SeminaireId == seminaireId)
+            .GroupBy(p => new { p.SessionId, p.ResultatPosition })
+            .Select(g => new { g.Key.SessionId, g.Key.ResultatPosition, Nombre = g.Count() })
+            .ToListAsync(ct);
+
+        var sessions = await db.Sessions.AsNoTracking()
+            .Where(s => seminaireId == null || s.SeminaireId == seminaireId)
+            .OrderBy(s => s.HeureDebut)
+            .Select(s => new { s.Id, Libelle = s.Seminaire.Designation + " – " + s.Designation })
+            .ToListAsync(ct);
+
+        return sessions.Select(s =>
+        {
+            int Nombre(ResultatPosition r) => comptes.Where(c => c.SessionId == s.Id && c.ResultatPosition == r).Sum(c => c.Nombre);
+            return new RapportLieuDto(s.Id.ToString(), s.Libelle,
+                Nombre(ResultatPosition.SurPlace), Nombre(ResultatPosition.HorsZone),
+                Nombre(ResultatPosition.NonLocalise), Nombre(ResultatPosition.NonControle));
+        }).ToList();
+    }
+
     /// <summary>Nombre de participants distincts par club (clubs sans inscrit exclus).</summary>
     public async Task<List<RapportLigneDto>> InscritsParClubAsync(Guid? seminaireId, CancellationToken ct)
     {

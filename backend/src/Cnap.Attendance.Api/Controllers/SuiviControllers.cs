@@ -55,6 +55,10 @@ public class RapportsController(RapportService service) : ControllerBase
     public Task<List<RapportLigneDto>> PresencesParSession([FromQuery] Guid? seminaireId, CancellationToken ct) =>
         service.PresencesParSessionAsync(seminaireId, ct);
 
+    [HttpGet("presences-par-lieu")]
+    public Task<List<RapportLieuDto>> PresencesParLieu([FromQuery] Guid? seminaireId, CancellationToken ct) =>
+        service.PresencesParLieuAsync(seminaireId, ct);
+
     [HttpGet("inscrits-par-club")]
     public Task<List<RapportLigneDto>> InscritsParClub([FromQuery] Guid? seminaireId, CancellationToken ct) =>
         service.InscritsParClubAsync(seminaireId, ct);
