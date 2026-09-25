@@ -78,8 +78,9 @@ public class SeminaireService(AppDbContext db, TimeProvider horloge)
 public class SessionService(AppDbContext db, TimeProvider horloge)
 {
     public Task<List<SessionDto>> ListerAsync(Guid? seminaireId, CancellationToken ct) =>
-        Projeter(db.Sessions.AsNoTracking().Where(s => seminaireId == null || s.SeminaireId == seminaireId))
-            .OrderBy(s => s.Seminaire).ThenBy(s => s.HeureDebut)
+        Projeter(db.Sessions.AsNoTracking()
+                .Where(s => seminaireId == null || s.SeminaireId == seminaireId)
+                .OrderBy(s => s.Seminaire.Designation).ThenBy(s => s.HeureDebut))
             .ToListAsync(ct);
 
     public async Task<SessionDto> ObtenirAsync(Guid id, CancellationToken ct) =>
