@@ -20,7 +20,6 @@ export type PresenceConfirmation = {
 };
 
 // Admin
-export type PageResultat<T> = { items: T[]; total: number; page: number; taille: number };
 export type UtilisateurConnecte = { id: string; email: string; nomComplet: string; role: string; doitChangerMotDePasse: boolean };
 export type Seminaire = { id: string; designation: string; description: string | null; estActif: boolean; nombreSessions: number; nombreInscrits: number };
 export type Session = {

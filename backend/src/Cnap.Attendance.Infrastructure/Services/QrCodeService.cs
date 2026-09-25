@@ -8,16 +8,6 @@ namespace Cnap.Attendance.Infrastructure.Services;
 
 public class QrCodeService(AppDbContext db, TimeProvider horloge)
 {
-    public async Task<PageResultat<QrCodeListeDto>> ListerAsync(QrCodeFiltre filtre, int page, int taille, CancellationToken ct)
-    {
-        var requete = Filtrer(filtre);
-        var total = await requete.CountAsync(ct);
-        var items = await Projeter(requete)
-            .Skip((page - 1) * taille).Take(taille)
-            .ToListAsync(ct);
-        return new PageResultat<QrCodeListeDto>(items, total, page, taille);
-    }
-
     public Task<List<QrCodeListeDto>> ListerToutAsync(QrCodeFiltre filtre, CancellationToken ct) =>
         Projeter(Filtrer(filtre)).ToListAsync(ct);
 

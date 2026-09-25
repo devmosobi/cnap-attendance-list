@@ -1,27 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Eye, RefreshCw } from "lucide-react";
 import { ImportFichier } from "@/components/import-fichier";
-import { Alerte, Badge, Bouton, Carte, Cellule, Chargement, Champ, EnTete, Pagination, Tableau } from "@/components/ui";
-import { construireQuery, telecharger } from "@/lib/api";
+import { TableDonnees } from "@/components/table-donnees";
+import { ActionIcone, Badge, Bouton, Carte, EnTete } from "@/components/ui";
 import { dateHeure } from "@/lib/format";
 import { useDonnees, useEstAdministrateur } from "@/lib/hooks";
-import type { Club, PageResultat, QrCodeListe, Seminaire } from "@/lib/types";
+import type { QrCodeListe } from "@/lib/types";
 
 export default function PageQrCodes() {
   const estAdmin = useEstAdministrateur();
-  const [filtres, setFiltres] = useState({ statut: "", seminaireId: "", clubCode: "", recherche: "" });
-  const [page, setPage] = useState(1);
-  const seminaires = useDonnees<Seminaire[]>("/api/admin/seminaires");
-  const clubs = useDonnees<Club[]>("/api/admin/clubs");
-  const liste = useDonnees<PageResultat<QrCodeListe>>(`/api/admin/qrcodes${construireQuery({ ...filtres, page, taille: 50 })}`);
-
-  const modifier = (cle: keyof typeof filtres, valeur: string) => {
-    setPage(1);
-    setFiltres((f) => ({ ...f, [cle]: valeur }));
-  };
-  const exporter = (format: string) => telecharger(`/api/admin/qrcodes/export${construireQuery({ ...filtres, format })}`);
+  const { donnees, erreur, chargement, recharger } = useDonnees<QrCodeListe[]>("/api/admin/qrcodes");
 
   return (
     <>
@@ -29,89 +19,58 @@ export default function PageQrCodes() {
         titre="QR Codes"
         description="Billets et participants inscrits."
         actions={
-          <>
-            {estAdmin && (
-              <ImportFichier
-                titre="Importer des QR Codes"
-                chemin="/api/admin/qrcodes/import"
-                consigne="Une colonne « Code » (20 caractères) ; les autres colonnes sont ignorées. Les codes déjà présents sont ignorés."
-                onTermine={liste.recharger}
-              />
-            )}
-            <Bouton variante="secondaire" onClick={() => exporter("Xlsx")}>
-              Export Excel
-            </Bouton>
-            <Bouton variante="secondaire" onClick={() => exporter("Csv")}>
-              Export CSV
-            </Bouton>
-          </>
+          estAdmin && (
+            <ImportFichier
+              titre="Importer des QR Codes"
+              chemin="/api/admin/qrcodes/import"
+              consigne="Une colonne « Code » (20 caractères) ; les autres colonnes sont ignorées. Les codes déjà présents sont ignorés."
+              onTermine={recharger}
+            />
+          )
         }
       />
-      <Carte className="mb-5">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Champ libelle="Statut">
-            <select className="champ" value={filtres.statut} onChange={(e) => modifier("statut", e.target.value)}>
-              <option value="">Tous</option>
-              <option value="Actif">Actif</option>
-              <option value="Inactif">Inactif</option>
-            </select>
-          </Champ>
-          <Champ libelle="Séminaire">
-            <select className="champ" value={filtres.seminaireId} onChange={(e) => modifier("seminaireId", e.target.value)}>
-              <option value="">Tous</option>
-              {seminaires.donnees?.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.designation}
-                </option>
-              ))}
-            </select>
-          </Champ>
-          <Champ libelle="Club">
-            <select className="champ" value={filtres.clubCode} onChange={(e) => modifier("clubCode", e.target.value)}>
-              <option value="">Tous</option>
-              {clubs.donnees?.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.nom}
-                </option>
-              ))}
-            </select>
-          </Champ>
-          <Champ libelle="Recherche">
-            <input className="champ" placeholder="Nom, email ou code" value={filtres.recherche} onChange={(e) => modifier("recherche", e.target.value)} />
-          </Champ>
-        </div>
-      </Carte>
-
       <Carte>
-        {liste.erreur && <Alerte>{liste.erreur}</Alerte>}
-        {!liste.donnees && liste.chargement && <Chargement />}
-        {liste.donnees && (
-          <>
-            <Tableau entetes={["Code", "Statut", "Participant", "Club", "Séminaire", "Activation", "Présences"]} vide={liste.donnees.items.length === 0}>
-              {liste.donnees.items.map((q) => (
-                <tr key={q.code} className="hover:bg-slate-50">
-                  <Cellule>
-                    <Link href={`/admin/qrcodes/${q.code}`} className="font-mono text-xs font-semibold text-rotary hover:underline">
-                      {q.code}
-                    </Link>
-                  </Cellule>
-                  <Cellule>
-                    <Badge actif={q.statut === "Actif"} />
-                  </Cellule>
-                  <Cellule>
-                    {q.nomComplet ?? <span className="text-gris">—</span>}
-                    {q.email && <span className="block text-xs text-gris">{q.email}</span>}
-                  </Cellule>
-                  <Cellule>{q.club ?? "—"}</Cellule>
-                  <Cellule>{q.seminaire ?? "—"}</Cellule>
-                  <Cellule className="whitespace-nowrap tabular-nums">{dateHeure(q.dateActivation)}</Cellule>
-                  <Cellule className="tabular-nums">{q.nombrePresences}</Cellule>
-                </tr>
-              ))}
-            </Tableau>
-            <Pagination page={page} taille={50} total={liste.donnees.total} onPage={setPage} />
-          </>
-        )}
+        <TableDonnees
+          lignes={donnees}
+          erreur={erreur}
+          chargement={chargement}
+          cleLigne={(q) => q.code}
+          titreExport="QR Codes"
+          nomFichier="qrcodes"
+          triInitial={{ cle: "activation", sens: "desc" }}
+          outils={
+            <Bouton variante="secondaire" taille="petit" onClick={recharger}>
+              <RefreshCw size={15} aria-hidden /> Actualiser
+            </Bouton>
+          }
+          colonnes={[
+            {
+              cle: "code",
+              titre: "Code",
+              valeur: (q) => q.code,
+              rendu: (q) => (
+                <Link href={`/admin/qrcodes/${q.code}`} className="font-mono text-xs font-semibold text-rotary hover:underline">
+                  {q.code}
+                </Link>
+              ),
+            },
+            { cle: "statut", titre: "Statut", valeur: (q) => q.statut, filtre: "liste", rendu: (q) => <Badge actif={q.statut === "Actif"} /> },
+            { cle: "nom", titre: "Nom complet", valeur: (q) => q.nomComplet ?? "", classe: "font-semibold" },
+            { cle: "email", titre: "Email", valeur: (q) => q.email ?? "" },
+            { cle: "club", titre: "Club", valeur: (q) => q.club ?? "", filtre: "liste" },
+            { cle: "seminaire", titre: "Séminaire", valeur: (q) => q.seminaire ?? "", filtre: "liste" },
+            {
+              cle: "activation",
+              titre: "Activation",
+              valeur: (q) => q.dateActivation ?? "",
+              texte: (q) => (q.dateActivation ? dateHeure(q.dateActivation) : ""),
+              type: "date",
+              classe: "whitespace-nowrap tabular-nums",
+            },
+            { cle: "presences", titre: "Présences", valeur: (q) => q.nombrePresences, type: "nombre" },
+          ]}
+          actions={(q) => <ActionIcone libelle="Voir le détail" icone={Eye} href={`/admin/qrcodes/${q.code}`} />}
+        />
       </Carte>
     </>
   );

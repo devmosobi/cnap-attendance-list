@@ -1,7 +1,5 @@
 namespace Cnap.Attendance.Core.Dtos;
 
-public record PageResultat<T>(IReadOnlyList<T> Items, int Total, int Page, int Taille);
-
 // Séminaires
 public record SeminaireDto(Guid Id, string Designation, string? Description, bool EstActif, int NombreSessions, int NombreInscrits);
 

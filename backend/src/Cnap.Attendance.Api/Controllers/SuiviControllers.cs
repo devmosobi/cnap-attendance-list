@@ -11,28 +11,9 @@ namespace Cnap.Attendance.Api.Controllers;
 [Authorize(Policy = Politiques.Console)]
 public class QrCodesController(QrCodeService service) : ControllerBase
 {
+    /// <summary>Liste complète : tri, filtres de colonnes, pagination et exports sont faits dans la console.</summary>
     [HttpGet]
-    public Task<PageResultat<QrCodeListeDto>> Lister([FromQuery] QrCodeFiltre filtre, [FromQuery] int page = 1, [FromQuery] int taille = 50, CancellationToken ct = default) =>
-        service.ListerAsync(filtre, Math.Max(page, 1), Math.Clamp(taille, 1, 200), ct);
-
-    [HttpGet("export")]
-    public async Task<IActionResult> Exporter([FromQuery] QrCodeFiltre filtre, [FromQuery] FormatExport format = FormatExport.Xlsx, CancellationToken ct = default)
-    {
-        var lignes = await service.ListerToutAsync(filtre, ct);
-        var fichier = TableauExport.Generer(lignes,
-        [
-            new("Code", l => l.Code),
-            new("Statut", l => l.Statut),
-            new("Nom complet", l => l.NomComplet),
-            new("Email", l => l.Email),
-            new("Code club", l => l.ClubCode),
-            new("Club", l => l.Club),
-            new("Séminaire", l => l.Seminaire),
-            new("Date d'activation", l => l.DateActivation),
-            new("Nombre de présences", l => l.NombrePresences)
-        ], format, "qrcodes");
-        return File(fichier.Contenu, fichier.ContentType, fichier.NomFichier);
-    }
+    public Task<List<QrCodeListeDto>> Lister([FromQuery] QrCodeFiltre filtre, CancellationToken ct) => service.ListerToutAsync(filtre, ct);
 
     [HttpGet("{code}")]
     public Task<QrCodeDetailDto> Obtenir(string code, CancellationToken ct) => service.ObtenirAsync(code, ct);
@@ -57,27 +38,9 @@ public class QrCodesController(QrCodeService service) : ControllerBase
 [Authorize(Policy = Politiques.Console)]
 public class PresencesController(PresenceService service) : ControllerBase
 {
+    /// <summary>Liste complète : tri, filtres de colonnes, pagination et exports sont faits dans la console.</summary>
     [HttpGet]
-    public Task<PageResultat<PresenceListeDto>> Lister([FromQuery] PresenceFiltre filtre, [FromQuery] int page = 1, [FromQuery] int taille = 50, CancellationToken ct = default) =>
-        service.ListerAsync(filtre, Math.Max(page, 1), Math.Clamp(taille, 1, 200), ct);
-
-    [HttpGet("export")]
-    public async Task<IActionResult> Exporter([FromQuery] PresenceFiltre filtre, [FromQuery] FormatExport format = FormatExport.Xlsx, CancellationToken ct = default)
-    {
-        var lignes = await service.ListerToutAsync(filtre, ct);
-        var fichier = TableauExport.Generer(lignes,
-        [
-            new("Nom complet", l => l.NomComplet),
-            new("Email", l => l.Email),
-            new("Code club", l => l.ClubCode),
-            new("Club", l => l.Club),
-            new("Séminaire", l => l.Seminaire),
-            new("Session", l => l.Session),
-            new("Heure de pointage", l => l.HeureDePointage),
-            new("QR Code", l => l.QrCode)
-        ], format, "presences");
-        return File(fichier.Contenu, fichier.ContentType, fichier.NomFichier);
-    }
+    public Task<List<PresenceListeDto>> Lister([FromQuery] PresenceFiltre filtre, CancellationToken ct) => service.ListerToutAsync(filtre, ct);
 }
 
 [ApiController]
@@ -95,20 +58,4 @@ public class RapportsController(RapportService service) : ControllerBase
     [HttpGet("inscrits-par-club")]
     public Task<List<RapportLigneDto>> InscritsParClub([FromQuery] Guid? seminaireId, CancellationToken ct) =>
         service.InscritsParClubAsync(seminaireId, ct);
-
-    [HttpGet("{rapport}/export")]
-    public async Task<IActionResult> Exporter(string rapport, [FromQuery] Guid? seminaireId, [FromQuery] FormatExport format = FormatExport.Xlsx, CancellationToken ct = default)
-    {
-        var (lignes, libelle, valeur) = rapport switch
-        {
-            "inscrits-par-seminaire" => (await service.InscritsParSeminaireAsync(ct), "Séminaire", "Inscrits"),
-            "presences-par-session" => (await service.PresencesParSessionAsync(seminaireId, ct), "Session", "Présences"),
-            "inscrits-par-club" => (await service.InscritsParClubAsync(seminaireId, ct), "Club", "Inscrits"),
-            _ => (null, string.Empty, string.Empty)
-        };
-        if (lignes is null) return NotFound();
-
-        var fichier = TableauExport.Generer(lignes, [new(libelle, l => l.Libelle), new(valeur, l => l.Valeur)], format, rapport);
-        return File(fichier.Contenu, fichier.ContentType, fichier.NomFichier);
-    }
 }

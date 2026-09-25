@@ -1,5 +1,7 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export function Bouton({
@@ -70,49 +72,49 @@ export function Badge({ actif, oui = "Actif", non = "Inactif" }: { actif: boolea
   );
 }
 
-export function Tableau({ entetes, children, vide }: { entetes: string[]; children: React.ReactNode; vide?: boolean }) {
+/**
+ * Action de ligne sous forme d'icône, avec infobulle au survol et au focus clavier.
+ * Le libellé sert aussi de nom accessible (lecteurs d'écran, écrans tactiles).
+ */
+export function ActionIcone({
+  libelle,
+  icone: Icone,
+  onClick,
+  href,
+  ton = "normal",
+  disabled,
+}: {
+  libelle: string;
+  icone: LucideIcon;
+  onClick?: () => void;
+  href?: string;
+  ton?: "normal" | "danger" | "succes";
+  disabled?: boolean;
+}) {
+  const couleurs = {
+    normal: "text-gris hover:bg-rotary-clair hover:text-rotary",
+    danger: "text-gris hover:bg-red-50 hover:text-red-700",
+    succes: "text-gris hover:bg-emerald-50 hover:text-emerald-700",
+  }[ton];
+  const classe = `inline-flex rounded-md p-1.5 transition focus-visible:outline-2 focus-visible:outline-rotary disabled:opacity-40 ${couleurs}`;
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[640px] text-left text-sm">
-        <thead className="border-b border-slate-200 text-xs tracking-wide text-gris uppercase">
-          <tr>
-            {entetes.map((e) => (
-              <th key={e} className="px-3 py-2 font-semibold whitespace-nowrap">
-                {e}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">{children}</tbody>
-      </table>
-      {vide && <p className="py-8 text-center text-sm text-gris">Aucun résultat.</p>}
-    </div>
-  );
-}
-
-export function Cellule({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
-  return <td className={`px-3 py-2.5 align-middle ${className}`}>{children}</td>;
-}
-
-export function Pagination({ page, taille, total, onPage }: { page: number; taille: number; total: number; onPage: (p: number) => void }) {
-  const pages = Math.max(1, Math.ceil(total / taille));
-  return (
-    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-gris">
-      <span>
-        {total} résultat{total > 1 ? "s" : ""}
+    <span className="group relative inline-flex">
+      {href ? (
+        <Link href={href} aria-label={libelle} className={classe}>
+          <Icone size={16} aria-hidden />
+        </Link>
+      ) : (
+        <button type="button" aria-label={libelle} onClick={onClick} disabled={disabled} className={classe}>
+          <Icone size={16} aria-hidden />
+        </button>
+      )}
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-0 z-30 mb-1 rounded bg-encre px-2 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+      >
+        {libelle}
       </span>
-      <div className="flex items-center gap-2">
-        <Bouton variante="secondaire" taille="petit" disabled={page <= 1} onClick={() => onPage(page - 1)}>
-          ← Précédent
-        </Bouton>
-        <span>
-          Page {page} / {pages}
-        </span>
-        <Bouton variante="secondaire" taille="petit" disabled={page >= pages} onClick={() => onPage(page + 1)}>
-          Suivant →
-        </Bouton>
-      </div>
-    </div>
+    </span>
   );
 }
 

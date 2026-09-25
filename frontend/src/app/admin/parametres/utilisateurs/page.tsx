@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Alerte, Badge, Bouton, Carte, Cellule, Chargement, Champ, Confirmer, EnTete, Modale, Tableau } from "@/components/ui";
+import { KeyRound, Pencil, Plus, Trash } from "lucide-react";
+import { TableDonnees } from "@/components/table-donnees";
+import { ActionIcone, Alerte, Badge, Bouton, Carte, Champ, Confirmer, EnTete, Modale } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useDonnees, useUtilisateur } from "@/lib/hooks";
 import { ROLES, type Utilisateur } from "@/lib/types";
@@ -23,7 +25,7 @@ export default function PageUtilisateurs() {
         description="Comptes d'accès à la console. Les Gestionnaires n'ont pas accès aux paramètres ni aux utilisateurs."
         actions={
           <Bouton onClick={() => setFormulaire({ email: "", nomComplet: "", role: "Gestionnaire", motDePasse: "", estActif: true })}>
-            Nouvel utilisateur
+            <Plus size={16} aria-hidden /> Nouvel utilisateur
           </Bouton>
         }
       />
@@ -33,41 +35,41 @@ export default function PageUtilisateurs() {
         </div>
       )}
       <Carte>
-        {!donnees ? (
-          <Chargement />
-        ) : (
-          <Tableau entetes={["Nom", "Email", "Rôle", "Statut", ""]} vide={donnees.length === 0}>
-            {donnees.map((u) => (
-              <tr key={u.id}>
-                <Cellule className="font-semibold">
-                  {u.nomComplet}
-                  {u.doitChangerMotDePasse && <span className="block text-xs font-normal text-amber-700">Mot de passe à changer</span>}
-                </Cellule>
-                <Cellule>{u.email}</Cellule>
-                <Cellule>{u.role}</Cellule>
-                <Cellule>
-                  <Badge actif={u.estActif} />
-                </Cellule>
-                <Cellule className="text-right whitespace-nowrap">
-                  <Bouton
-                    variante="lien"
-                    onClick={() => setFormulaire({ id: u.id, email: u.email, nomComplet: u.nomComplet, role: u.role, motDePasse: "", estActif: u.estActif })}
-                  >
-                    Modifier
-                  </Bouton>
-                  <Bouton variante="lien" className="ml-3" onClick={() => setReinitialisation(u)}>
-                    Mot de passe
-                  </Bouton>
-                  {u.id !== moi?.id && (
-                    <Bouton variante="lien" className="ml-3 !text-red-700" onClick={() => setASupprimer(u)}>
-                      Supprimer
-                    </Bouton>
-                  )}
-                </Cellule>
-              </tr>
-            ))}
-          </Tableau>
-        )}
+        <TableDonnees
+          lignes={donnees}
+          chargement={!donnees && !erreur}
+          cleLigne={(u) => u.id}
+          titreExport="Utilisateurs"
+          nomFichier="utilisateurs"
+          triInitial={{ cle: "nom", sens: "asc" }}
+          colonnes={[
+            {
+              cle: "nom",
+              titre: "Nom",
+              valeur: (u) => u.nomComplet,
+              rendu: (u) => (
+                <>
+                  <span className="font-semibold">{u.nomComplet}</span>
+                  {u.doitChangerMotDePasse && <span className="block text-xs text-amber-700">Mot de passe à changer</span>}
+                </>
+              ),
+            },
+            { cle: "email", titre: "Email", valeur: (u) => u.email },
+            { cle: "role", titre: "Rôle", valeur: (u) => u.role, filtre: "liste" },
+            { cle: "statut", titre: "Statut", valeur: (u) => (u.estActif ? "Actif" : "Inactif"), filtre: "liste", rendu: (u) => <Badge actif={u.estActif} /> },
+          ]}
+          actions={(u) => (
+            <>
+              <ActionIcone
+                libelle="Modifier"
+                icone={Pencil}
+                onClick={() => setFormulaire({ id: u.id, email: u.email, nomComplet: u.nomComplet, role: u.role, motDePasse: "", estActif: u.estActif })}
+              />
+              <ActionIcone libelle="Réinitialiser le mot de passe" icone={KeyRound} onClick={() => setReinitialisation(u)} />
+              {u.id !== moi?.id && <ActionIcone libelle="Supprimer" icone={Trash} ton="danger" onClick={() => setASupprimer(u)} />}
+            </>
+          )}
+        />
       </Carte>
 
       {formulaire && (

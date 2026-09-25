@@ -7,14 +7,6 @@ namespace Cnap.Attendance.Infrastructure.Services;
 
 public class PresenceService(AppDbContext db)
 {
-    public async Task<PageResultat<PresenceListeDto>> ListerAsync(PresenceFiltre filtre, int page, int taille, CancellationToken ct)
-    {
-        var requete = Filtrer(filtre);
-        var total = await requete.CountAsync(ct);
-        var items = await Projeter(requete).Skip((page - 1) * taille).Take(taille).ToListAsync(ct);
-        return new PageResultat<PresenceListeDto>(items, total, page, taille);
-    }
-
     public Task<List<PresenceListeDto>> ListerToutAsync(PresenceFiltre filtre, CancellationToken ct) =>
         Projeter(Filtrer(filtre)).ToListAsync(ct);
 

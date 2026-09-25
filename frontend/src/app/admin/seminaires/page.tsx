@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Alerte, Badge, Bouton, Carte, Cellule, Chargement, Champ, Confirmer, EnTete, Modale, Tableau } from "@/components/ui";
+import { Pencil, Plus, Power, PowerOff, Trash } from "lucide-react";
+import { TableDonnees } from "@/components/table-donnees";
+import { ActionIcone, Alerte, Badge, Bouton, Carte, Champ, Confirmer, EnTete, Modale } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useDonnees } from "@/lib/hooks";
 import type { Seminaire } from "@/lib/types";
@@ -29,48 +31,52 @@ export default function PageSeminaires() {
       <EnTete
         titre="Séminaires"
         description="Seuls les séminaires actifs sont proposés aux participants."
-        actions={<Bouton onClick={() => setFormulaire({ designation: "", description: "", estActif: false })}>Nouveau séminaire</Bouton>}
+        actions={<Bouton onClick={() => setFormulaire({ designation: "", description: "", estActif: false })}>
+            <Plus size={16} aria-hidden /> Nouveau séminaire
+          </Bouton>}
       />
       {(erreur || message) && (
         <div className="mb-4">
-          <Alerte>{erreur ?? message}</Alerte>
+          <Alerte>{message ?? erreur}</Alerte>
         </div>
       )}
       <Carte>
-        {!donnees ? (
-          <Chargement />
-        ) : (
-          <Tableau entetes={["Désignation", "Statut", "Sessions", "Inscrits", ""]} vide={donnees.length === 0}>
-            {donnees.map((s) => (
-              <tr key={s.id}>
-                <Cellule>
-                  <span className="font-semibold">{s.designation}</span>
-                  {s.description && <span className="block text-xs text-gris">{s.description}</span>}
-                </Cellule>
-                <Cellule>
-                  <Badge actif={s.estActif} />
-                </Cellule>
-                <Cellule className="tabular-nums">{s.nombreSessions}</Cellule>
-                <Cellule className="tabular-nums">{s.nombreInscrits}</Cellule>
-                <Cellule className="text-right whitespace-nowrap">
-                  <Bouton variante="lien" onClick={() => basculer(s)}>
-                    {s.estActif ? "Désactiver" : "Activer"}
-                  </Bouton>
-                  <Bouton
-                    variante="lien"
-                    className="ml-3"
-                    onClick={() => setFormulaire({ id: s.id, designation: s.designation, description: s.description ?? "", estActif: s.estActif })}
-                  >
-                    Modifier
-                  </Bouton>
-                  <Bouton variante="lien" className="ml-3 !text-red-700" onClick={() => setASupprimer(s)}>
-                    Supprimer
-                  </Bouton>
-                </Cellule>
-              </tr>
-            ))}
-          </Tableau>
-        )}
+        <TableDonnees
+          lignes={donnees}
+          chargement={!donnees && !erreur}
+          cleLigne={(s) => s.id}
+          titreExport="Séminaires"
+          nomFichier="seminaires"
+          triInitial={{ cle: "designation", sens: "asc" }}
+          colonnes={[
+            {
+              cle: "designation",
+              titre: "Désignation",
+              valeur: (s) => s.designation,
+              rendu: (s) => <span className="font-semibold">{s.designation}</span>,
+            },
+            { cle: "description", titre: "Description", valeur: (s) => s.description ?? "", classe: "text-gris" },
+            { cle: "statut", titre: "Statut", valeur: (s) => (s.estActif ? "Actif" : "Inactif"), filtre: "liste", rendu: (s) => <Badge actif={s.estActif} /> },
+            { cle: "sessions", titre: "Sessions", valeur: (s) => s.nombreSessions, type: "nombre" },
+            { cle: "inscrits", titre: "Inscrits", valeur: (s) => s.nombreInscrits, type: "nombre" },
+          ]}
+          actions={(s) => (
+            <>
+              <ActionIcone
+                libelle="Modifier"
+                icone={Pencil}
+                onClick={() => setFormulaire({ id: s.id, designation: s.designation, description: s.description ?? "", estActif: s.estActif })}
+              />
+              <ActionIcone
+                libelle={s.estActif ? "Désactiver" : "Activer"}
+                icone={s.estActif ? PowerOff : Power}
+                ton={s.estActif ? "normal" : "succes"}
+                onClick={() => basculer(s)}
+              />
+              <ActionIcone libelle="Supprimer" icone={Trash} ton="danger" onClick={() => setASupprimer(s)} />
+            </>
+          )}
+        />
       </Carte>
 
       {formulaire && (

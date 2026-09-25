@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Alerte, Badge, Bouton, Carte, Cellule, Chargement, Champ, Confirmer, EnTete, Modale, Tableau } from "@/components/ui";
-import { api, construireQuery } from "@/lib/api";
-import { depuisChampDateHeure, plage, versChampDateHeure } from "@/lib/format";
+import { Pencil, Plus, Power, PowerOff, Trash } from "lucide-react";
+import { TableDonnees } from "@/components/table-donnees";
+import { ActionIcone, Alerte, Badge, Bouton, Carte, Champ, Confirmer, EnTete, Modale } from "@/components/ui";
+import { api } from "@/lib/api";
+import { dateHeure, depuisChampDateHeure, versChampDateHeure } from "@/lib/format";
 import { useDonnees } from "@/lib/hooks";
 import type { Seminaire, Session } from "@/lib/types";
 
@@ -18,9 +20,8 @@ type Formulaire = {
 };
 
 export default function PageSessions() {
-  const [seminaireId, setSeminaireId] = useState("");
   const seminaires = useDonnees<Seminaire[]>("/api/admin/seminaires");
-  const { donnees, erreur, recharger } = useDonnees<Session[]>(`/api/admin/sessions${construireQuery({ seminaireId })}`);
+  const { donnees, erreur, recharger } = useDonnees<Session[]>("/api/admin/sessions");
   const [formulaire, setFormulaire] = useState<Formulaire | null>(null);
   const [aSupprimer, setASupprimer] = useState<Session | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -37,7 +38,8 @@ export default function PageSessions() {
 
   const nouvelle = () =>
     setFormulaire({
-      seminaireId: seminaireId || seminaires.donnees?.[0]?.id || "",
+      // Séminaire actif proposé par défaut.
+      seminaireId: (seminaires.donnees?.find((s) => s.estActif) ?? seminaires.donnees?.[0])?.id ?? "",
       designation: "",
       heureDebut: "",
       heureFin: "",
@@ -51,72 +53,66 @@ export default function PageSessions() {
         titre="Sessions de formation"
         description="Activez une session pour ouvrir le pointage, désactivez-la pour le fermer. Heures en heure de Côte d'Ivoire."
         actions={
-          <>
-            <select className="champ w-auto" value={seminaireId} onChange={(e) => setSeminaireId(e.target.value)} aria-label="Filtrer par séminaire">
-              <option value="">Tous les séminaires</option>
-              {seminaires.donnees?.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.designation}
-                </option>
-              ))}
-            </select>
-            <Bouton onClick={nouvelle} disabled={!seminaires.donnees?.length}>
-              Nouvelle session
-            </Bouton>
-          </>
+          <Bouton onClick={nouvelle} disabled={!seminaires.donnees?.length}>
+            <Plus size={16} aria-hidden /> Nouvelle session
+          </Bouton>
         }
       />
       {(erreur || message) && (
         <div className="mb-4">
-          <Alerte>{erreur ?? message}</Alerte>
+          <Alerte>{message ?? erreur}</Alerte>
         </div>
       )}
       <Carte>
-        {!donnees ? (
-          <Chargement />
-        ) : (
-          <Tableau entetes={["Session", "Séminaire", "Horaires", "Statut", "Présences", ""]} vide={donnees.length === 0}>
-            {donnees.map((s) => (
-              <tr key={s.id}>
-                <Cellule>
-                  <span className="font-semibold">{s.designation}</span>
-                  {s.description && <span className="block text-xs text-gris">{s.description}</span>}
-                </Cellule>
-                <Cellule>{s.seminaire}</Cellule>
-                <Cellule className="whitespace-nowrap tabular-nums">{plage(s.heureDebut, s.heureFin)}</Cellule>
-                <Cellule>
-                  <Badge actif={s.estActif} oui="Ouverte" non="Fermée" />
-                </Cellule>
-                <Cellule className="tabular-nums">{s.nombrePresences}</Cellule>
-                <Cellule className="text-right whitespace-nowrap">
-                  <Bouton variante="lien" onClick={() => basculer(s)}>
-                    {s.estActif ? "Fermer" : "Ouvrir"}
-                  </Bouton>
-                  <Bouton
-                    variante="lien"
-                    className="ml-3"
-                    onClick={() =>
-                      setFormulaire({
-                        id: s.id,
-                        seminaireId: s.seminaireId,
-                        designation: s.designation,
-                        heureDebut: versChampDateHeure(s.heureDebut),
-                        heureFin: versChampDateHeure(s.heureFin),
-                        description: s.description ?? "",
-                        estActif: s.estActif,
-                      })
-                    }
-                  >
-                    Modifier
-                  </Bouton>
-                  <Bouton variante="lien" className="ml-3 !text-red-700" onClick={() => setASupprimer(s)}>
-                    Supprimer
-                  </Bouton>
-                </Cellule>
-              </tr>
-            ))}
-          </Tableau>
-        )}
+        <TableDonnees
+          lignes={donnees}
+          chargement={!donnees && !erreur}
+          cleLigne={(s) => s.id}
+          titreExport="Sessions de formation"
+          nomFichier="sessions"
+          triInitial={{ cle: "debut", sens: "asc" }}
+          colonnes={[
+            { cle: "designation", titre: "Session", valeur: (s) => s.designation, rendu: (s) => <span className="font-semibold">{s.designation}</span> },
+            { cle: "seminaire", titre: "Séminaire", valeur: (s) => s.seminaire, filtre: "liste" },
+            { cle: "debut", titre: "Début", valeur: (s) => s.heureDebut, texte: (s) => dateHeure(s.heureDebut), type: "date", classe: "whitespace-nowrap tabular-nums" },
+            { cle: "fin", titre: "Fin", valeur: (s) => s.heureFin, texte: (s) => dateHeure(s.heureFin), type: "date", classe: "whitespace-nowrap tabular-nums" },
+            {
+              cle: "statut",
+              titre: "Statut",
+              valeur: (s) => (s.estActif ? "Ouverte" : "Fermée"),
+              filtre: "liste",
+              rendu: (s) => <Badge actif={s.estActif} oui="Ouverte" non="Fermée" />,
+            },
+            { cle: "presences", titre: "Présences", valeur: (s) => s.nombrePresences, type: "nombre" },
+            { cle: "description", titre: "Description", valeur: (s) => s.description ?? "", classe: "text-gris" },
+          ]}
+          actions={(s) => (
+            <>
+              <ActionIcone
+                libelle="Modifier"
+                icone={Pencil}
+                onClick={() =>
+                  setFormulaire({
+                    id: s.id,
+                    seminaireId: s.seminaireId,
+                    designation: s.designation,
+                    heureDebut: versChampDateHeure(s.heureDebut),
+                    heureFin: versChampDateHeure(s.heureFin),
+                    description: s.description ?? "",
+                    estActif: s.estActif,
+                  })
+                }
+              />
+              <ActionIcone
+                libelle={s.estActif ? "Fermer le pointage" : "Ouvrir le pointage"}
+                icone={s.estActif ? PowerOff : Power}
+                ton={s.estActif ? "normal" : "succes"}
+                onClick={() => basculer(s)}
+              />
+              <ActionIcone libelle="Supprimer" icone={Trash} ton="danger" onClick={() => setASupprimer(s)} />
+            </>
+          )}
+        />
       </Carte>
 
       {formulaire && (

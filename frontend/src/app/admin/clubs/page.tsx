@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Pencil, Plus, Power, PowerOff, Trash } from "lucide-react";
+import { useState } from "react";
+import { TableDonnees } from "@/components/table-donnees";
 import { ImportFichier } from "@/components/import-fichier";
-import { Alerte, Badge, Bouton, Carte, Cellule, Chargement, Champ, Confirmer, EnTete, Modale, Tableau } from "@/components/ui";
+import { ActionIcone, Alerte, Badge, Bouton, Carte, Champ, Confirmer, EnTete, Modale } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useDonnees } from "@/lib/hooks";
 import type { Club } from "@/lib/types";
@@ -11,15 +13,9 @@ type Formulaire = { existant: boolean; code: string; nom: string; estActif: bool
 
 export default function PageClubs() {
   const { donnees, erreur, recharger } = useDonnees<Club[]>("/api/admin/clubs");
-  const [recherche, setRecherche] = useState("");
   const [formulaire, setFormulaire] = useState<Formulaire | null>(null);
   const [aSupprimer, setASupprimer] = useState<Club | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-
-  const filtres = useMemo(() => {
-    const r = recherche.trim().toLowerCase();
-    return (donnees ?? []).filter((c) => !r || c.nom.toLowerCase().includes(r) || c.code.toLowerCase().includes(r));
-  }, [donnees, recherche]);
 
   const basculer = async (c: Club) => {
     setMessage(null);
@@ -45,44 +41,44 @@ export default function PageClubs() {
               modele="/api/admin/clubs/modele"
               onTermine={recharger}
             />
-            <Bouton onClick={() => setFormulaire({ existant: false, code: "", nom: "", estActif: true })}>Nouveau club</Bouton>
+            <Bouton onClick={() => setFormulaire({ existant: false, code: "", nom: "", estActif: true })}>
+              <Plus size={16} aria-hidden /> Nouveau club
+            </Bouton>
           </>
         }
       />
       {(erreur || message) && (
         <div className="mb-4">
-          <Alerte>{erreur ?? message}</Alerte>
+          <Alerte>{message ?? erreur}</Alerte>
         </div>
       )}
       <Carte>
-        <input className="champ mb-4 sm:max-w-xs" placeholder="Rechercher un club…" value={recherche} onChange={(e) => setRecherche(e.target.value)} />
-        {!donnees ? (
-          <Chargement />
-        ) : (
-          <Tableau entetes={["Code", "Nom", "Statut", "Inscrits", ""]} vide={filtres.length === 0}>
-            {filtres.map((c) => (
-              <tr key={c.code}>
-                <Cellule className="font-mono text-xs">{c.code}</Cellule>
-                <Cellule className="font-semibold">{c.nom}</Cellule>
-                <Cellule>
-                  <Badge actif={c.estActif} />
-                </Cellule>
-                <Cellule className="tabular-nums">{c.nombreInscrits}</Cellule>
-                <Cellule className="text-right whitespace-nowrap">
-                  <Bouton variante="lien" onClick={() => basculer(c)}>
-                    {c.estActif ? "Désactiver" : "Activer"}
-                  </Bouton>
-                  <Bouton variante="lien" className="ml-3" onClick={() => setFormulaire({ existant: true, code: c.code, nom: c.nom, estActif: c.estActif })}>
-                    Modifier
-                  </Bouton>
-                  <Bouton variante="lien" className="ml-3 !text-red-700" onClick={() => setASupprimer(c)}>
-                    Supprimer
-                  </Bouton>
-                </Cellule>
-              </tr>
-            ))}
-          </Tableau>
-        )}
+        <TableDonnees
+          lignes={donnees}
+          chargement={!donnees && !erreur}
+          cleLigne={(c) => c.code}
+          titreExport="Clubs"
+          nomFichier="clubs"
+          triInitial={{ cle: "nom", sens: "asc" }}
+          colonnes={[
+            { cle: "code", titre: "Code", valeur: (c) => c.code, classe: "font-mono text-xs" },
+            { cle: "nom", titre: "Nom", valeur: (c) => c.nom, rendu: (c) => <span className="font-semibold">{c.nom}</span> },
+            { cle: "statut", titre: "Statut", valeur: (c) => (c.estActif ? "Actif" : "Inactif"), filtre: "liste", rendu: (c) => <Badge actif={c.estActif} /> },
+            { cle: "inscrits", titre: "Inscrits", valeur: (c) => c.nombreInscrits, type: "nombre" },
+          ]}
+          actions={(c) => (
+            <>
+              <ActionIcone libelle="Modifier" icone={Pencil} onClick={() => setFormulaire({ existant: true, code: c.code, nom: c.nom, estActif: c.estActif })} />
+              <ActionIcone
+                libelle={c.estActif ? "Désactiver" : "Activer"}
+                icone={c.estActif ? PowerOff : Power}
+                ton={c.estActif ? "normal" : "succes"}
+                onClick={() => basculer(c)}
+              />
+              <ActionIcone libelle="Supprimer" icone={Trash} ton="danger" onClick={() => setASupprimer(c)} />
+            </>
+          )}
+        />
       </Carte>
 
       {formulaire && (

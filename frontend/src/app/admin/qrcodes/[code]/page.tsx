@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { Pencil } from "lucide-react";
 import { use, useState } from "react";
-import { Alerte, Badge, Bouton, Carte, Cellule, Chargement, Champ, EnTete, Modale, Tableau } from "@/components/ui";
+import { TableDonnees } from "@/components/table-donnees";
+import { Alerte, Badge, Bouton, Carte, Chargement, Champ, EnTete, Modale } from "@/components/ui";
 import { api } from "@/lib/api";
 import { dateHeure } from "@/lib/format";
 import { useDonnees, useEstAdministrateur } from "@/lib/hooks";
@@ -25,7 +27,7 @@ export default function PageQrCode({ params }: { params: Promise<{ code: string 
         actions={
           estAdmin && qr?.statut === "Actif" ? (
             <Bouton variante="secondaire" onClick={() => setEdition(true)}>
-              Modifier le participant
+              <Pencil size={16} aria-hidden /> Modifier le participant
             </Bouton>
           ) : undefined
         }
@@ -45,15 +47,25 @@ export default function PageQrCode({ params }: { params: Promise<{ code: string 
             </dl>
           </Carte>
           <Carte titre={`Historique des présences (${qr.presences.length})`} className="lg:col-span-2">
-            <Tableau entetes={["Séminaire", "Session", "Heure de pointage"]} vide={qr.presences.length === 0}>
-              {qr.presences.map((p) => (
-                <tr key={p.id}>
-                  <Cellule>{p.seminaire}</Cellule>
-                  <Cellule>{p.session}</Cellule>
-                  <Cellule className="tabular-nums">{dateHeure(p.heureDePointage)}</Cellule>
-                </tr>
-              ))}
-            </Tableau>
+            <TableDonnees
+              lignes={qr.presences}
+              cleLigne={(p) => p.id}
+              titreExport={`Historique des présences – ${qr.nomComplet ?? qr.code}`}
+              nomFichier={`presences-${qr.code}`}
+              triInitial={{ cle: "pointage", sens: "asc" }}
+              colonnes={[
+                { cle: "seminaire", titre: "Séminaire", valeur: (p) => p.seminaire, filtre: "liste" },
+                { cle: "session", titre: "Session", valeur: (p) => p.session, filtre: "liste" },
+                {
+                  cle: "pointage",
+                  titre: "Heure de pointage",
+                  valeur: (p) => p.heureDePointage,
+                  texte: (p) => dateHeure(p.heureDePointage),
+                  type: "date",
+                  classe: "whitespace-nowrap tabular-nums",
+                },
+              ]}
+            />
           </Carte>
         </div>
       )}

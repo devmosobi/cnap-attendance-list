@@ -36,12 +36,14 @@ Internet ──► Cloudflare ──► tunnel du serveur ──► Traefik (Doc
 ```
 backend/
   src/Cnap.Attendance.Core/            entités, DTOs, validateurs FluentValidation, exceptions métier
-  src/Cnap.Attendance.Infrastructure/  DbContext, migrations, Identity, services, SMTP + outbox, import/export, seed
+  src/Cnap.Attendance.Infrastructure/  DbContext, migrations, Identity, services, SMTP + outbox, import, seed
   src/Cnap.Attendance.Api/             contrôleurs, authentification JWT, rate limiting, Program.cs
 frontend/
   src/middleware.ts                    réécriture /attendance=… et garde /admin
   src/app/scan/[code]/                 page publique mobile
   src/app/admin/                       console d'administration
+  src/components/table-donnees.tsx     tableau commun : tri, filtres de colonnes, pagination, exports
+  src/lib/export.ts                    exports CSV, Excel et PDF générés dans le navigateur
 docker-compose.yml                     stack de production (Dockploy)
 docker-compose.local.yml               surcharge pour tester sur Docker Desktop
 ```
@@ -81,6 +83,21 @@ docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 
 La surcharge locale ajoute un PostgreSQL de test (jamais utilisé en production), publie les ports et configure le
 SMTP vers Mailpit.
+
+## Console d'administration : listes et exports
+
+Toutes les listes (séminaires, sessions, clubs, QR Codes, présences, utilisateurs, historique d'un participant,
+tableaux du tableau de bord) partagent le même fonctionnement :
+
+- actions de ligne en icônes à gauche, avec infobulle ;
+- tri en cliquant sur l'en-tête de colonne (croissant, décroissant, sans tri) ;
+- filtre sous chaque en-tête : saisie libre (sans tenir compte des accents ni de la casse) ou liste des valeurs ;
+- pagination de 10, 30, 50 ou 100 lignes ;
+- exports **CSV, Excel et PDF** de la vue affichée : les filtres et le tri sont appliqués, toutes les pages sont
+  exportées, et les filtres actifs sont rappelés en tête du PDF.
+
+Le tableau de bord s'exporte aussi en un seul PDF (graphiques et tableaux) avec le bouton « Exporter en PDF ».
+Les exports sont générés dans le navigateur.
 
 ## Première mise en service
 
