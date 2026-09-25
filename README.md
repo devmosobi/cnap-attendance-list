@@ -11,20 +11,23 @@ Chaque participant dispose d'un billet imprimé portant un QR Code unique. En le
 | Backend | ASP.NET Core Web API .NET 8, EF Core 8 (Code First), ASP.NET Core Identity + JWT |
 | Base de données | PostgreSQL 16 |
 | Emails | SMTP (MailKit) via une table outbox traitée en tâche de fond |
-| Déploiement | Docker Compose sur Dockploy, exposition via Cloudflare Tunnel |
+| Déploiement | Docker Compose sur Dockploy (domaines déclarés dans Dockploy, derrière le tunnel Cloudflare existant) |
 
 ## Architecture
 
 ```
-Internet ──► Cloudflare ──► cloudflared (tunnel)
-                               ├── /api/*       ──► backend:8080  (ASP.NET Core)
-                               └── tout le reste ──► frontend:3000 (Next.js)
-                                                     backend ──► db:5432 (PostgreSQL)
+Internet ──► Cloudflare ──► tunnel du serveur ──► Traefik (Dockploy) ──► frontend:3000 (Next.js)
+                                                                            └── /api/* relayé en interne ──► backend:8080
+                                                                                                             └── db:5432
 ```
 
-- Un seul nom de domaine : le frontend et l'API partagent la même origine, les jetons JWT circulent en cookies
-  `httpOnly` (`SameSite=Lax`).
-- Aucun port n'est publié en production : seul `cloudflared` sort vers Internet.
+- L'application ne dépend d'aucun nom de domaine : chaque domaine déclaré dans Dockploy sur le service `frontend`
+  la sert en entier (page de scan, console, API sous `/api`). La page et l'API partagent donc toujours la même origine ;
+  les jetons JWT circulent en cookies `httpOnly` (`SameSite=Lax`), propres à chaque domaine.
+- Aucun port n'est publié : seul le service `frontend` reçoit du trafic, via Traefik. Le backend et la base ne sont
+  joignables que sur le réseau Docker interne.
+- L'IP réelle du participant (`CF-Connecting-IP`, sinon `X-Forwarded-For`) est transmise jusqu'au backend pour la
+  limitation de débit.
 - Le middleware Next.js réécrit en interne `/attendance=<code>` vers la page de scan : l'URL imprimée sur les billets
   reste celle affichée dans le navigateur.
 
@@ -37,7 +40,6 @@ frontend/
   src/middleware.ts                    réécriture /attendance=… et garde /admin
   src/app/scan/[code]/                 page publique mobile
   src/app/admin/                       console d'administration
-deploy/cloudflared/config.yml          variante « tunnel géré par fichier »
 docker-compose.yml                     stack de production (Dockploy)
 docker-compose.local.yml               surcharge pour tester sur Docker Desktop
 ```
@@ -62,7 +64,6 @@ docker-compose.local.yml               surcharge pour tester sur Docker Desktop
 ```bash
 cp .env.example .env
 # Pour un test local, ajuster dans .env :
-#   PUBLIC_URL=http://localhost:3000
 #   COOKIE_SECURE=false
 #   et renseigner POSTGRES_PASSWORD, JWT_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
 
@@ -75,7 +76,7 @@ docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 | http://localhost:3000/admin | Console d'administration |
 | http://localhost:8025 | Mailpit : boîte de réception capturant tous les emails envoyés |
 
-La surcharge locale publie les ports, désactive le tunnel et configure le SMTP vers Mailpit.
+La surcharge locale publie les ports et configure le SMTP vers Mailpit.
 
 ## Première mise en service
 
@@ -93,31 +94,37 @@ La surcharge locale publie les ports, désactive le tunnel et configure le SMTP 
 
 ## Déploiement sur Dockploy
 
-1. **Créer le tunnel Cloudflare** (Cloudflare Zero Trust > Networks > Tunnels > Create a tunnel > Cloudflared).
-   Copier le **jeton** affiché dans la commande Docker (`--token eyJ...`).
-2. Dans le tunnel, onglet **Public Hostname**, ajouter **dans cet ordre** :
+Même fonctionnement que les autres applications du serveur : le tunnel Cloudflare existant envoie le trafic à Dockploy,
+et les domaines se déclarent dans Dockploy. Aucun jeton ni conteneur `cloudflared` n'est nécessaire ici.
 
-   | Sous-domaine | Domaine | Path | Service |
-   |---|---|---|---|
-   | `ef2026-cnap-ci` | `rotary-district9101.org` | `^/api/` | `http://backend:8080` |
-   | `ef2026-cnap-ci` | `rotary-district9101.org` | *(vide)* | `http://frontend:3000` |
-
-   Cloudflare crée l'enregistrement DNS et gère le certificat HTTPS.
-3. **Dans Dockploy** : créer un projet, puis un service **Docker Compose** pointant vers ce dépôt Git
-   (branche `main`, fichier `docker-compose.yml`).
-4. Dans l'onglet **Environment** du service, saisir les variables de `.env.example` avec des valeurs de production :
+1. **Dans Dockploy** : créer un service **Docker Compose** pointant vers ce dépôt Git (branche `main`, fichier
+   `docker-compose.yml`).
+2. Onglet **Environment** : saisir les variables de [.env.example](.env.example) avec des valeurs de production :
    - `POSTGRES_PASSWORD` et `JWT_SECRET` : valeurs aléatoires fortes (`openssl rand -base64 48`) ;
-   - `PUBLIC_URL=https://ef2026-cnap-ci.rotary-district9101.org` ;
    - `COOKIE_SECURE=true` ;
-   - `ADMIN_EMAIL`, `ADMIN_PASSWORD` ;
-   - `CLOUDFLARE_TUNNEL_TOKEN` : le jeton de l'étape 1.
-5. **Ne pas attribuer de domaine Dockploy/Traefik** aux services : l'exposition passe uniquement par le tunnel.
-6. Déployer. Au démarrage, le backend applique les migrations puis crée les rôles, le compte administrateur et les
-   données de démarrage (si les tables sont vides).
-7. Vérifier `https://ef2026-cnap-ci.rotary-district9101.org/api/health` → `{"statut":"ok"}`.
+   - `ADMIN_EMAIL`, `ADMIN_PASSWORD`.
+3. Onglet **Domains** : ajouter chaque domaine sur le service **`frontend`**, port **`3000`**, chemin `/`, avec les
+   mêmes réglages HTTPS/certificat que les autres applications derrière le tunnel. Par exemple :
 
-> Le tunnel doit pouvoir joindre `backend` et `frontend` par leur nom de service : `cloudflared` est déclaré dans le
-> même fichier Compose, donc sur le même réseau Docker.
+   | Domaine | Service | Port |
+   |---|---|---|
+   | `ef2026-cnap-ci.rotary-district9101.org` (formation effectif) | `frontend` | 3000 |
+   | `sf2026-cnap-ci.rotary-district9101.org` (formation fondation) | `frontend` | 3000 |
+   | `attendance-cnap-ci.rotary-district9101.org` (formations génériques) | `frontend` | 3000 |
+
+   Ne pas déclarer de domaine sur `backend` ni sur `db`.
+4. Dans Cloudflare, faire pointer ces sous-domaines vers le tunnel existant, comme pour les autres applications.
+5. Déployer. Au démarrage, le backend applique les migrations puis crée les rôles, le compte administrateur et les
+   données de démarrage (si les tables sont vides).
+6. Vérifier `https://<domaine>/api/health` → `{"statut":"ok"}`.
+
+### Plusieurs formations : une instance ou plusieurs ?
+
+- **Une seule instance avec les trois domaines** : une base commune (QR Codes, clubs, utilisateurs, rapports). Les
+  participants voient les séminaires **actifs** au moment du scan, quel que soit le domaine : il suffit d'activer le
+  séminaire de la formation en cours.
+- **Une instance par formation** : déployer ce même dépôt dans trois services Docker Compose distincts (chacun avec
+  sa base, ses variables et son domaine). Les données, les comptes et les codes sont alors totalement séparés.
 
 ### Mot de passe administrateur oublié
 
@@ -137,7 +144,7 @@ place, un redémarrage n'écrase pas le mot de passe choisi entre-temps. Pour r�
 ### Variables d'environnement
 
 Toutes les variables sont documentées dans [.env.example](.env.example). Les secrets (mot de passe PostgreSQL, secret
-JWT, identifiants SMTP, jeton du tunnel) ne sont jamais écrits dans le code.
+JWT, identifiants SMTP) ne sont jamais écrits dans le code.
 
 Le mot de passe SMTP saisi dans la console est chiffré en base (ASP.NET Data Protection) ; les clés de chiffrement sont
 elles-mêmes stockées en base (`data_protection_keys`) et survivent donc aux redéploiements des conteneurs.
@@ -185,8 +192,9 @@ cd frontend && npm install && npm run dev
 - Refresh tokens stockés hachés (SHA-256), rotation à chaque usage et révocation de la famille en cas de réutilisation.
 - Verrouillage du compte 15 minutes après 5 échecs de connexion ; connexion limitée à 10 requêtes par minute et par IP.
 - Page de scan : format du code validé (20 caractères alphanumériques) côté client et serveur, réponse identique pour
-  un code mal formé ou inconnu, rate limiting par IP (`CF-Connecting-IP`). La limite reste large (300/min par défaut)
+  un code mal formé ou inconnu, rate limiting par IP (`CF-Connecting-IP`, sinon `X-Forwarded-For`). La limite reste large (300/min par défaut)
   car de nombreux participants partagent la même IP publique (Wi-Fi de l'hôtel, NAT des opérateurs mobiles) ;
   l'espace des codes (31^20) rend l'énumération irréaliste.
-- CORS limité à `PUBLIC_URL`.
+- Aucune origine externe autorisée par défaut (CORS) : la page et l'API sont toujours servies par le même domaine.
+  `PUBLIC_URLS` permet d'en ajouter si un autre site doit appeler l'API.
 - Exports CSV protégés contre l'injection de formules.

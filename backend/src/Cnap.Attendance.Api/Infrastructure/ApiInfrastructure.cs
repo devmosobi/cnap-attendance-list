@@ -79,13 +79,21 @@ public class ValidationFilter(IServiceProvider services) : IAsyncActionFilter
 public static class HttpContextExtensions
 {
     /// <summary>
-    /// IP du client : l'API n'est joignable qu'au travers du tunnel Cloudflare,
-    /// l'en-tête CF-Connecting-IP est donc fiable.
+    /// IP du client pour le rate limiting. L'API n'est pas publiée directement : elle n'est joignable qu'au travers
+    /// de Cloudflare puis du reverse proxy (Traefik/Dockploy) et du relais /api de Next.js, qui transmettent ces en-têtes.
     /// </summary>
-    public static string IpClient(this HttpContext context) =>
-        context.Request.Headers["CF-Connecting-IP"].FirstOrDefault()
-        ?? context.Connection.RemoteIpAddress?.ToString()
-        ?? "inconnue";
+    public static string IpClient(this HttpContext context)
+    {
+        var cloudflare = context.Request.Headers["CF-Connecting-IP"].FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(cloudflare))
+            return cloudflare.Trim();
+
+        var relais = context.Request.Headers["X-Forwarded-For"].FirstOrDefault()?.Split(',')[0].Trim();
+        if (!string.IsNullOrWhiteSpace(relais))
+            return relais;
+
+        return context.Connection.RemoteIpAddress?.ToString() ?? "inconnue";
+    }
 
     public static Guid UtilisateurId(this ClaimsPrincipal user) =>
         Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier) ?? user.FindFirstValue("sub"), out var id) ? id : Guid.Empty;

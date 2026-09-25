@@ -1,5 +1,6 @@
 # Gestion Liste de Présence – Commission Nationale Formation
-# Production (Dockploy) : aucun port publié, l'accès public passe uniquement par le tunnel Cloudflare.
+# Production (Dockploy) : aucun port publié. Les domaines se déclarent dans Dockploy (onglet Domains)
+# sur le service « frontend », port 3000 ; Next.js relaie /api vers le backend en interne.
 # Test local : docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 
 name: cnap-attendance
@@ -32,7 +33,7 @@ services:
       ConnectionStrings__Default: Host=db;Port=5432;Database=${POSTGRES_DB:-cnap_attendance};Username=${POSTGRES_USER:-cnap};Password=${POSTGRES_PASSWORD}
       Jwt__Secret: ${JWT_SECRET:?JWT_SECRET est requis (32 caractères minimum)}
       Jwt__CookieSecure: ${COOKIE_SECURE:-true}
-      Cors__Origines: ${PUBLIC_URL:?PUBLIC_URL est requis}
+      Cors__Origines: ${PUBLIC_URLS:-}
       Database__MigrateOnStartup: "true"
       Seed__AdminEmail: ${ADMIN_EMAIL:-}
       Seed__AdminMotDePasse: ${ADMIN_PASSWORD:-}
@@ -55,16 +56,6 @@ services:
     restart: unless-stopped
     depends_on:
       backend:
-        condition: service_healthy
-
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    restart: unless-stopped
-    command: tunnel --no-autoupdate run
-    environment:
-      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
-    depends_on:
-      frontend:
         condition: service_healthy
 
 volumes:
