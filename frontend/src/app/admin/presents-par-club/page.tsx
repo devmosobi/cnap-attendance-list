@@ -15,6 +15,10 @@ const normaliser = (v: string) => v.normalize("NFD").replace(/[̀-ͯ]/g, "").toL
 const comparateur = new Intl.Collator("fr", { sensitivity: "base" });
 const part = (n: number, total: number) => (total === 0 ? 0 : (n / total) * 100);
 const formatPart = (p: number) => `${p.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`;
+/** Moyenne des sessions suivies par les présents (arrondie à 2 décimales). */
+const moyenneSessions = (presents: PresentClub[]) =>
+  presents.length === 0 ? 0 : Math.round((presents.reduce((s, p) => s + p.nombreSessions, 0) / presents.length) * 100) / 100;
+const formatMoyenne = (m: number) => m.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 type Groupe = { cle: string; club: string; type: TypeClub | null; presents: PresentClub[] };
 
@@ -58,9 +62,10 @@ export default function PagePresentsParClub() {
   );
 
   const nbPresents = groupes.reduce((s, g) => s + g.presents.length, 0);
+  const moyenneGenerale = moyenneSessions(groupes.flatMap((g) => g.presents));
   const maxPresents = synthese[0]?.presents.length ?? 0;
   const resumeFiltres = [recherche && `recherche « ${recherche} »`, type && `type ${LIBELLES_TYPE_CLUB[type]}`].filter(Boolean).join(", ");
-  const sousTitre = `Séminaire : ${nomSeminaire} · ${nbPresents} présent${nbPresents > 1 ? "s" : ""} · ${groupes.length} club${groupes.length > 1 ? "s" : ""}${
+  const sousTitre = `Séminaire : ${nomSeminaire} · ${nbPresents} présent${nbPresents > 1 ? "s" : ""} · ${groupes.length} club${groupes.length > 1 ? "s" : ""} · moyenne ${formatMoyenne(moyenneGenerale)} session(s) suivie(s) par présent${
     resumeFiltres ? ` · Filtres : ${resumeFiltres}` : ""
   }`;
 
@@ -77,8 +82,18 @@ export default function PagePresentsParClub() {
     setExportEnCours(format);
     try {
       const nomFichier = "presents-par-club";
-      const colonnesSynthese: ColonneExport[] = [{ titre: "Club" }, { titre: "Présents", type: "nombre" }, { titre: "Part" }];
-      const lignesSynthese = synthese.map((g) => [g.club, g.presents.length, formatPart(part(g.presents.length, nbPresents))]);
+      const colonnesSynthese: ColonneExport[] = [
+        { titre: "Club" },
+        { titre: "Présents", type: "nombre" },
+        { titre: "Part" },
+        { titre: "Moyenne de sessions suivies", type: "nombre" },
+      ];
+      // Excel : moyenne numérique ; PDF : moyenne formatée (virgule décimale).
+      const lignesSynthese = (moyenneTexte: boolean) =>
+        synthese.map((g) => {
+          const m = moyenneSessions(g.presents);
+          return [g.club, g.presents.length, formatPart(part(g.presents.length, nbPresents)), moyenneTexte ? formatMoyenne(m) : m];
+        });
 
       if (format === "pdf") {
         const colonnes: ColonneExport[] = [
@@ -88,9 +103,9 @@ export default function PagePresentsParClub() {
           { titre: "Dernière validation" },
         ];
         const sections: SectionPdf[] = [
-          { titre: "Synthèse par club", colonnes: colonnesSynthese, lignes: lignesSynthese },
+          { titre: "Synthèse par club", colonnes: colonnesSynthese, lignes: lignesSynthese(true) },
           ...groupes.map((g) => ({
-            titre: `${g.club} · ${g.presents.length} présent${g.presents.length > 1 ? "s" : ""}`,
+            titre: `${g.club} · ${g.presents.length} présent${g.presents.length > 1 ? "s" : ""} · moyenne ${formatMoyenne(moyenneSessions(g.presents))} session(s)`,
             colonnes,
             lignes: g.presents.map((p) => [p.nomComplet, p.nombreSessions, new Date(p.premiereValidation), new Date(p.derniereValidation)]),
           })),
@@ -117,7 +132,7 @@ export default function PagePresentsParClub() {
       };
       if (format === "csv") exporterCsv(document);
       else {
-        const feuilleSynthese: FeuilleExport = { titre: "Synthèse par club", colonnes: colonnesSynthese, lignes: lignesSynthese };
+        const feuilleSynthese: FeuilleExport = { titre: "Synthèse par club", colonnes: colonnesSynthese, lignes: lignesSynthese(false) };
         await exporterXlsx(document, [feuilleSynthese]);
       }
     } catch {
@@ -182,6 +197,7 @@ export default function PagePresentsParClub() {
           <Users size={15} aria-hidden />
           {nbPresents} présent{nbPresents > 1 ? "s" : ""} · {groupes.length} club{groupes.length > 1 ? "s" : ""}
           {presents.donnees && nbPresents !== presents.donnees.length && ` (sur ${presents.donnees.length})`}
+          {nbPresents > 0 && ` · moyenne ${formatMoyenne(moyenneGenerale)} session(s) suivie(s) par présent`}
         </p>
         {(presents.erreur || erreurExport) && (
           <div className="mt-3">
@@ -207,6 +223,9 @@ export default function PagePresentsParClub() {
                   <th className="px-3 py-2 font-semibold">Club</th>
                   <th className="w-20 px-3 py-2 text-right font-semibold">Présents</th>
                   <th className="w-20 px-3 py-2 text-right font-semibold">Part</th>
+                  <th className="w-28 px-3 py-2 text-right font-semibold" title="Moyenne des sessions suivies par présent">
+                    Moy. sessions
+                  </th>
                   <th className="w-2/5 px-3 py-2">
                     <span className="sr-only">Répartition</span>
                   </th>
@@ -219,6 +238,7 @@ export default function PagePresentsParClub() {
                     <td className="px-3 py-2 font-semibold">{g.club}</td>
                     <td className="px-3 py-2 text-right font-bold tabular-nums">{g.presents.length}</td>
                     <td className="px-3 py-2 text-right text-gris tabular-nums">{formatPart(part(g.presents.length, nbPresents))}</td>
+                    <td className="px-3 py-2 text-right font-semibold tabular-nums">{formatMoyenne(moyenneSessions(g.presents))}</td>
                     <td className="px-3 py-2" aria-hidden>
                       <div className="h-3 rounded-r bg-rotary dark:bg-[#6b9cf0]" style={{ width: `${part(g.presents.length, maxPresents)}%` }} />
                     </td>
@@ -251,8 +271,11 @@ export default function PagePresentsParClub() {
                 className="flex w-full flex-wrap items-center justify-between gap-2 px-4 py-3 text-left hover:bg-surface-2"
               >
                 <span className="font-bold">{g.club}</span>
-                <span className="rounded-full bg-rotary-clair px-2.5 py-0.5 text-sm font-semibold text-lien tabular-nums">
-                  {g.presents.length} présent{g.presents.length > 1 ? "s" : ""}
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-gris tabular-nums">moyenne {formatMoyenne(moyenneSessions(g.presents))} session(s)</span>
+                  <span className="rounded-full bg-rotary-clair px-2.5 py-0.5 text-sm font-semibold text-lien tabular-nums">
+                    {g.presents.length} présent{g.presents.length > 1 ? "s" : ""}
+                  </span>
                 </span>
               </button>
               {ouvert && (
@@ -278,6 +301,14 @@ export default function PagePresentsParClub() {
                         </tr>
                       ))}
                     </tbody>
+                    <tfoot className="border-t border-bordure bg-surface-2 text-sm">
+                      <tr>
+                        <td className="px-3 py-2" />
+                        <td className="px-3 py-2 font-semibold">Moyenne du club</td>
+                        <td className="px-3 py-2 text-right font-bold tabular-nums">{formatMoyenne(moyenneSessions(g.presents))}</td>
+                        <td className="px-3 py-2" colSpan={2} />
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
               )}
