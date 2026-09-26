@@ -4,7 +4,7 @@ import { ChevronsDownUp, ChevronsUpDown, FileSpreadsheet, FileText, RefreshCw, S
 import { useEffect, useMemo, useState } from "react";
 import { Alerte, Bouton, Carte, Chargement, EnTete } from "@/components/ui";
 import { construireQuery } from "@/lib/api";
-import { LIBELLES_TYPE_CLUB, TYPES_CLUB } from "@/lib/clubs";
+import { LIBELLES_TYPE_CLUB, TYPES_CLUB, libelleTypeClub } from "@/lib/clubs";
 import { exporterCsv, exporterPdfSections, exporterXlsx, type ColonneExport, type DocumentExport, type FeuilleExport, type SectionPdf } from "@/lib/export";
 import { dateHeure } from "@/lib/format";
 import { useDonnees } from "@/lib/hooks";
@@ -68,6 +68,12 @@ export default function PagePresentsParClub() {
   const moyenneGenerale = moyenneSessions(groupes.flatMap((g) => g.presents));
   // Chiffres clés de la synthèse PDF : les participants sans club ne comptent pas comme un club.
   const nbClubsRepresentes = groupes.filter((g) => g.cle !== "").length;
+  const parType = TYPES_CLUB.map((t) => {
+    const clubs = groupes.filter((g) => g.cle !== "" && g.type === t);
+    return { cle: t as string, libelle: LIBELLES_TYPE_CLUB[t], clubs: clubs.length, participants: clubs.reduce((s, g) => s + g.presents.length, 0) };
+  });
+  const sansClub = groupes.find((g) => g.cle === "");
+  if (sansClub) parType.push({ cle: "sans", libelle: SANS_CLUB, clubs: 0, participants: sansClub.presents.length });
   const nbSessions = sessions.donnees?.filter((s) => s.seminaireId === seminaireId).length ?? 0;
   const maxPresents = synthese[0]?.presents.length ?? 0;
   const resumeFiltres = [recherche && `recherche « ${recherche} »`, type && `type ${LIBELLES_TYPE_CLUB[type]}`].filter(Boolean).join(", ");
@@ -88,8 +94,19 @@ export default function PagePresentsParClub() {
     setExportEnCours(format);
     try {
       const nomFichier = "presents-par-club";
+      const colonnesType: ColonneExport[] = [
+        { titre: "Type de club" },
+        { titre: "Clubs représentés", type: "nombre" },
+        { titre: "Participants", type: "nombre" },
+        { titre: "Part des participants" },
+      ];
+      const lignesType = [
+        ...parType.map((t) => [t.libelle, t.clubs, t.participants, formatPart(part(t.participants, nbPresents))]),
+        ["Total", nbClubsRepresentes, nbPresents, formatPart(nbPresents ? 100 : 0)],
+      ];
       const colonnesSynthese: ColonneExport[] = [
         { titre: "Club" },
+        { titre: "Type de club" },
         { titre: "Présents", type: "nombre" },
         { titre: "Part" },
         { titre: "Moyenne de sessions suivies", type: "nombre" },
@@ -98,7 +115,7 @@ export default function PagePresentsParClub() {
       const lignesSynthese = (moyenneTexte: boolean) =>
         synthese.map((g) => {
           const m = moyenneSessions(g.presents);
-          return [g.club, g.presents.length, formatPart(part(g.presents.length, nbPresents)), moyenneTexte ? formatMoyenne(m) : m];
+          return [g.club, libelleTypeClub(g.type), g.presents.length, formatPart(part(g.presents.length, nbPresents)), moyenneTexte ? formatMoyenne(m) : m];
         });
 
       if (format === "pdf") {
@@ -115,7 +132,9 @@ export default function PagePresentsParClub() {
             lignes: [
               ["Nombre d'inscrits", inscrits ?? ""], // vide si non renseigné sur le séminaire (à remplir à la main)
               ["Nombre de participants (global)", nbPresents],
+              ...parType.map((t) => [`   dont ${t.libelle}`, t.participants]),
               ["Nombre de clubs représentés", nbClubsRepresentes],
+              ...parType.filter((t) => t.cle !== "sans").map((t) => [`   dont ${t.libelle}`, t.clubs]),
               ["Nombre de sessions de formation", nbSessions],
               ...(inscrits ? [["Taux de participation (participants / inscrits)", formatPart(part(nbPresents, inscrits))]] : []),
             ],
@@ -123,7 +142,7 @@ export default function PagePresentsParClub() {
           },
           { titre: "Synthèse par club", colonnes: colonnesSynthese, lignes: lignesSynthese(true) },
           ...groupes.map((g) => ({
-            titre: `${g.club} · ${g.presents.length} présent${g.presents.length > 1 ? "s" : ""} · moyenne ${formatMoyenne(moyenneSessions(g.presents))} session(s)`,
+            titre: `${g.club}${g.type ? ` (${LIBELLES_TYPE_CLUB[g.type]})` : ""} · ${g.presents.length} présent${g.presents.length > 1 ? "s" : ""} · moyenne ${formatMoyenne(moyenneSessions(g.presents))} session(s)`,
             colonnes,
             lignes: g.presents.map((p) => [p.nomComplet, p.nombreSessions, new Date(p.premiereValidation), new Date(p.derniereValidation)]),
           })),
@@ -139,19 +158,21 @@ export default function PagePresentsParClub() {
         colonnes: [
           { titre: "Séminaire" },
           { titre: "Club" },
+          { titre: "Type de club" },
           { titre: "Nom complet" },
           { titre: "Sessions suivies", type: "nombre" },
           { titre: "1re validation", type: "date" },
           { titre: "Dernière validation", type: "date" },
         ],
         lignes: groupes.flatMap((g) =>
-          g.presents.map((p) => [nomSeminaire, g.club, p.nomComplet, p.nombreSessions, new Date(p.premiereValidation), new Date(p.derniereValidation)]),
+          g.presents.map((p) => [nomSeminaire, g.club, libelleTypeClub(g.type), p.nomComplet, p.nombreSessions, new Date(p.premiereValidation), new Date(p.derniereValidation)]),
         ),
       };
       if (format === "csv") exporterCsv(document);
       else {
         const feuilleSynthese: FeuilleExport = { titre: "Synthèse par club", colonnes: colonnesSynthese, lignes: lignesSynthese(false) };
-        await exporterXlsx(document, [feuilleSynthese]);
+        const feuilleType: FeuilleExport = { titre: "Par type de club", colonnes: colonnesType, lignes: lignesType };
+        await exporterXlsx(document, [feuilleType, feuilleSynthese]);
       }
     } catch {
       setErreurExport("L'export a échoué. Veuillez réessayer.");
@@ -233,6 +254,41 @@ export default function PagePresentsParClub() {
       )}
 
       {synthese.length > 0 && (
+        <Carte titre="Répartition par type de club" className="mb-5">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[480px] text-left text-sm">
+              <thead className="bg-surface-2 text-xs tracking-wide text-gris uppercase">
+                <tr>
+                  <th className="px-3 py-2 font-semibold">Type de club</th>
+                  <th className="px-3 py-2 text-right font-semibold">Clubs représentés</th>
+                  <th className="px-3 py-2 text-right font-semibold">Participants</th>
+                  <th className="px-3 py-2 text-right font-semibold">Part</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-bordure-douce">
+                {parType.map((t) => (
+                  <tr key={t.cle} className={t.participants === 0 ? "text-gris" : ""}>
+                    <td className="px-3 py-2 font-semibold">{t.libelle}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{t.cle === "sans" ? "—" : t.clubs}</td>
+                    <td className="px-3 py-2 text-right font-bold tabular-nums">{t.participants}</td>
+                    <td className="px-3 py-2 text-right text-gris tabular-nums">{formatPart(part(t.participants, nbPresents))}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="border-t border-bordure bg-surface-2">
+                <tr>
+                  <td className="px-3 py-2 font-semibold">Total</td>
+                  <td className="px-3 py-2 text-right font-semibold tabular-nums">{nbClubsRepresentes}</td>
+                  <td className="px-3 py-2 text-right font-bold tabular-nums">{nbPresents}</td>
+                  <td className="px-3 py-2 text-right text-gris tabular-nums">100 %</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </Carte>
+      )}
+
+      {synthese.length > 0 && (
         <Carte titre="Synthèse par club" className="mb-5">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] text-left text-sm">
@@ -240,6 +296,7 @@ export default function PagePresentsParClub() {
                 <tr>
                   <th className="w-10 px-3 py-2 font-semibold">#</th>
                   <th className="px-3 py-2 font-semibold">Club</th>
+                  <th className="px-3 py-2 font-semibold">Type</th>
                   <th className="w-20 px-3 py-2 text-right font-semibold">Présents</th>
                   <th className="w-20 px-3 py-2 text-right font-semibold">Part</th>
                   <th className="w-28 px-3 py-2 text-right font-semibold" title="Moyenne des sessions suivies par présent">
@@ -255,6 +312,7 @@ export default function PagePresentsParClub() {
                   <tr key={g.cle}>
                     <td className="px-3 py-2 text-gris tabular-nums">{i + 1}</td>
                     <td className="px-3 py-2 font-semibold">{g.club}</td>
+                    <td className="px-3 py-2 text-gris whitespace-nowrap">{libelleTypeClub(g.type)}</td>
                     <td className="px-3 py-2 text-right font-bold tabular-nums">{g.presents.length}</td>
                     <td className="px-3 py-2 text-right text-gris tabular-nums">{formatPart(part(g.presents.length, nbPresents))}</td>
                     <td className="px-3 py-2 text-right font-semibold tabular-nums">{formatMoyenne(moyenneSessions(g.presents))}</td>
@@ -289,7 +347,10 @@ export default function PagePresentsParClub() {
                 aria-expanded={ouvert}
                 className="flex w-full flex-wrap items-center justify-between gap-2 px-4 py-3 text-left hover:bg-surface-2"
               >
-                <span className="font-bold">{g.club}</span>
+                <span className="font-bold">
+                  {g.club}
+                  {g.type && <span className="ml-2 text-xs font-semibold text-gris">{LIBELLES_TYPE_CLUB[g.type]}</span>}
+                </span>
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="text-sm text-gris tabular-nums">moyenne {formatMoyenne(moyenneSessions(g.presents))} session(s)</span>
                   <span className="rounded-full bg-rotary-clair px-2.5 py-0.5 text-sm font-semibold text-lien tabular-nums">
