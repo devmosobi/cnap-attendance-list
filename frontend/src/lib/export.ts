@@ -14,6 +14,8 @@ export type SectionPdf = {
   image?: { url: string; largeur: number; hauteur: number };
   colonnes?: ColonneExport[];
   lignes?: ValeurCellule[][];
+  /** Hauteur minimale des lignes du tableau, en mm (ex. : cases à remplir à la main). */
+  hauteurLigne?: number;
 };
 
 export type DocumentExport = {
@@ -218,7 +220,16 @@ export async function exporterPdfSections({
         margin: { left: marge, right: marge, top: marge, bottom: 14 },
         head: [colonnes.map((c) => c.titre)],
         body: section.lignes.map((l) => l.map(texteCellule)),
-        styles: { font: "helvetica", fontSize: 8.5, cellPadding: 1.8, textColor: [23, 35, 60], lineColor: [227, 231, 239], lineWidth: 0.1 },
+        styles: {
+          font: "helvetica",
+          fontSize: 8.5,
+          cellPadding: 1.8,
+          textColor: [23, 35, 60],
+          lineColor: [227, 231, 239],
+          lineWidth: 0.1,
+          ...(section.hauteurLigne ? { minCellHeight: section.hauteurLigne } : {}),
+          valign: "middle",
+        },
         headStyles: { fillColor: BLEU_ROTARY, textColor: [255, 255, 255], fontStyle: "bold" },
         alternateRowStyles: { fillColor: [244, 246, 250] },
         columnStyles: Object.fromEntries(

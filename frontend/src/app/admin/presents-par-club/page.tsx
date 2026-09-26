@@ -8,7 +8,7 @@ import { LIBELLES_TYPE_CLUB, TYPES_CLUB } from "@/lib/clubs";
 import { exporterCsv, exporterPdfSections, exporterXlsx, type ColonneExport, type DocumentExport, type FeuilleExport, type SectionPdf } from "@/lib/export";
 import { dateHeure } from "@/lib/format";
 import { useDonnees } from "@/lib/hooks";
-import type { PresentClub, Seminaire, TypeClub } from "@/lib/types";
+import type { PresentClub, Seminaire, Session, TypeClub } from "@/lib/types";
 
 const SANS_CLUB = "Sans club";
 const normaliser = (v: string) => v.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
@@ -24,6 +24,7 @@ type Groupe = { cle: string; club: string; type: TypeClub | null; presents: Pres
 
 export default function PagePresentsParClub() {
   const seminaires = useDonnees<Seminaire[]>("/api/admin/seminaires");
+  const sessions = useDonnees<Session[]>("/api/admin/sessions");
   const [seminaireId, setSeminaireId] = useState("");
   const [recherche, setRecherche] = useState("");
   const [type, setType] = useState<TypeClub | "">("");
@@ -63,6 +64,9 @@ export default function PagePresentsParClub() {
 
   const nbPresents = groupes.reduce((s, g) => s + g.presents.length, 0);
   const moyenneGenerale = moyenneSessions(groupes.flatMap((g) => g.presents));
+  // Chiffres clés de la synthèse PDF : les participants sans club ne comptent pas comme un club.
+  const nbClubsRepresentes = groupes.filter((g) => g.cle !== "").length;
+  const nbSessions = sessions.donnees?.filter((s) => s.seminaireId === seminaireId).length ?? 0;
   const maxPresents = synthese[0]?.presents.length ?? 0;
   const resumeFiltres = [recherche && `recherche « ${recherche} »`, type && `type ${LIBELLES_TYPE_CLUB[type]}`].filter(Boolean).join(", ");
   const sousTitre = `Séminaire : ${nomSeminaire} · ${nbPresents} présent${nbPresents > 1 ? "s" : ""} · ${groupes.length} club${groupes.length > 1 ? "s" : ""} · moyenne ${formatMoyenne(moyenneGenerale)} session(s) suivie(s) par présent${
@@ -103,6 +107,17 @@ export default function PagePresentsParClub() {
           { titre: "Dernière validation" },
         ];
         const sections: SectionPdf[] = [
+          {
+            titre: "Synthèse",
+            colonnes: [{ titre: "Indicateur" }, { titre: "Valeur", type: "nombre" }],
+            lignes: [
+              ["Nombre d'inscrits", ""], // rempli à la main
+              ["Nombre de participants (global)", nbPresents],
+              ["Nombre de clubs représentés", nbClubsRepresentes],
+              ["Nombre de sessions de formation", nbSessions],
+            ],
+            hauteurLigne: 9,
+          },
           { titre: "Synthèse par club", colonnes: colonnesSynthese, lignes: lignesSynthese(true) },
           ...groupes.map((g) => ({
             titre: `${g.club} · ${g.presents.length} présent${g.presents.length > 1 ? "s" : ""} · moyenne ${formatMoyenne(moyenneSessions(g.presents))} session(s)`,
