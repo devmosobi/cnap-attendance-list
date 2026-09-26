@@ -19,6 +19,10 @@ public class QrCode
 
 public enum QrCodeStatut
 {
+    /// <summary>Jamais utilisé : le premier scan l'active.</summary>
     Inactif,
-    Actif
+    Actif,
+
+    /// <summary>Désactivé depuis la console (code sans session) : refusé au scan, réactivable.</summary>
+    Desactive
 }

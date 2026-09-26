@@ -4,9 +4,10 @@ import Link from "next/link";
 import { Pencil } from "lucide-react";
 import { use, useState } from "react";
 import { BadgeLieu } from "@/components/badge-lieu";
+import { BadgeStatutQr } from "@/components/badge-statut-qr";
 import { BadgeValidite, libelleValidite } from "@/components/badge-validite";
 import { TableDonnees } from "@/components/table-donnees";
-import { Alerte, Badge, Bouton, Carte, Chargement, Champ, EnTete, Modale } from "@/components/ui";
+import { Alerte, Bouton, Carte, Chargement, Champ, EnTete, Modale } from "@/components/ui";
 import { api } from "@/lib/api";
 import { dateHeure } from "@/lib/format";
 import { useDonnees, useEstAdministrateur } from "@/lib/hooks";
@@ -41,7 +42,7 @@ export default function PageQrCode({ params }: { params: Promise<{ code: string 
         <div className="grid gap-5 lg:grid-cols-3">
           <Carte titre="Participant">
             <dl className="grid gap-3 text-sm">
-              <Info terme="Statut" valeur={<Badge actif={qr.statut === "Actif"} />} />
+              <Info terme="Statut" valeur={<BadgeStatutQr statut={qr.statut} />} />
               <Info terme="Nom complet" valeur={qr.nomComplet ?? "—"} />
               <Info terme="Email" valeur={qr.email ?? "—"} />
               <Info terme="Club" valeur={qr.club ?? "—"} />

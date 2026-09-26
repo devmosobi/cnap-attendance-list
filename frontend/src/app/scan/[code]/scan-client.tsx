@@ -59,7 +59,15 @@ export function ScanClient({ code }: { code: string | null }) {
             <BoutonPrincipal onClick={charger}>Réessayer</BoutonPrincipal>
           </Message>
         )}
-        {etat.type === "formulaire" && code && (
+        {etat.type === "formulaire" && etat.donnees.statut === "Desactive" && (
+          <Message
+            icone="✕"
+            ton="rouge"
+            titre="Billet désactivé"
+            texte="Ce billet n'est plus valide. Adressez-vous à l'accueil de la formation."
+          />
+        )}
+        {etat.type === "formulaire" && etat.donnees.statut !== "Desactive" && code && (
           <Formulaire code={code} donnees={etat.donnees} onConfirme={(c) => setEtat({ type: "confirme", confirmation: c })} />
         )}
         {etat.type === "confirme" && <Confirmation confirmation={etat.confirmation} onAutre={charger} />}

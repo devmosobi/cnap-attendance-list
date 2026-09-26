@@ -71,6 +71,10 @@ docker-compose.local.yml               surcharge pour tester sur Docker Desktop
   exports**. Elle continue d'occuper la session : le participant ne peut pas la pointer de nouveau.
 - Les statistiques de participants (tableau de bord, séminaires, clubs, présents par club) ne comptent que les QR Codes
   ayant **au moins une présence valide** ; un QR Code sans présence valide n'est compté nulle part.
+- **QR Codes sans session** (bouton réservé aux Administrateurs dans QR Codes) : affiche le nombre de QR Codes sans
+  aucune session associée et permet de les **désactiver** (refusés au scan, réactivables) ou de les **supprimer**
+  (définitif ; réimporter le fichier des codes pour les recréer). Un QR Code utilisé dans au moins une session, même
+  invalidée, n'est jamais désactivé ni supprimé : la règle est appliquée par le serveur.
 - Le **nombre d'inscrits** d'un séminaire se saisit à la main (Séminaires > Modifier). Il est repris dans la synthèse du
   PDF « Présents par club » avec le taux de participation.
 

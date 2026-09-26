@@ -67,9 +67,9 @@ public class QrCodeConfiguration : IEntityTypeConfiguration<QrCode>
         b.ToTable("qr_codes", t =>
         {
             t.HasCheckConstraint("ck_qr_codes_format", "code ~ '^[A-Z0-9]{20}$'");
-            t.HasCheckConstraint("ck_qr_codes_statut", "statut IN ('Inactif', 'Actif')");
+            t.HasCheckConstraint("ck_qr_codes_statut", "statut IN ('Inactif', 'Actif', 'Desactive')");
             t.HasCheckConstraint("ck_qr_codes_actif_complet",
-                "statut = 'Inactif' OR (nom_complet IS NOT NULL AND email IS NOT NULL AND club_code IS NOT NULL AND seminaire_id IS NOT NULL AND date_activation IS NOT NULL)");
+                "statut <> 'Actif' OR (nom_complet IS NOT NULL AND email IS NOT NULL AND club_code IS NOT NULL AND seminaire_id IS NOT NULL AND date_activation IS NOT NULL)");
         });
         b.HasKey(x => x.Code);
         b.Property(x => x.Code).HasMaxLength(20);

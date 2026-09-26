@@ -14,6 +14,7 @@ namespace Cnap.Attendance.Infrastructure.Services;
 public partial class ScanService(AppDbContext db, TimeProvider horloge, ILogger<ScanService> logger)
 {
     public const string MessageCodeInvalide = "Code invalide.";
+    public const string MessageCodeDesactive = "Ce billet a été désactivé. Adressez-vous à l'accueil de la formation.";
 
     public async Task<ScanEtatDto> ObtenirEtatAsync(string codeBrut, CancellationToken ct)
     {
@@ -23,6 +24,9 @@ public partial class ScanService(AppDbContext db, TimeProvider horloge, ILogger<
             .Include(q => q.Club)
             .FirstOrDefaultAsync(q => q.Code == code, ct)
             ?? throw new IntrouvableException(MessageCodeInvalide);
+
+        if (qr.Statut == QrCodeStatut.Desactive)
+            return new ScanEtatDto(qr.Code, qr.Statut.ToString(), null, [], [], []);
 
         var seminaires = await ChargerSeminairesOuvertsAsync(ct);
 
@@ -47,6 +51,8 @@ public partial class ScanService(AppDbContext db, TimeProvider horloge, ILogger<
     public async Task<PresenceConfirmationDto> ValiderPresenceAsync(string codeBrut, ValiderPresenceRequest requete, CancellationToken ct)
     {
         var code = CodeQr.Normaliser(codeBrut) ?? throw new IntrouvableException(MessageCodeInvalide);
+        if (await db.QrCodes.AnyAsync(q => q.Code == code && q.Statut == QrCodeStatut.Desactive, ct))
+            throw new RegleMetierException(MessageCodeDesactive);
 
         var session = await db.Sessions.AsNoTracking()
             .Include(s => s.Seminaire)
@@ -75,6 +81,8 @@ public partial class ScanService(AppDbContext db, TimeProvider horloge, ILogger<
 
         var qr = await db.QrCodes.FirstOrDefaultAsync(q => q.Code == code, ct)
             ?? throw new IntrouvableException(MessageCodeInvalide);
+        if (qr.Statut == QrCodeStatut.Desactive)
+            throw new RegleMetierException(MessageCodeDesactive);
 
         var premierScan = false;
         if (qr.Statut == QrCodeStatut.Inactif)

@@ -48,6 +48,59 @@ public class QrCodeService(AppDbContext db, TimeProvider horloge)
         return await ObtenirAsync(code, ct);
     }
 
+    /// <summary>QR Codes sans aucune session associée : aucune présence, valide ou invalidée.</summary>
+    private IQueryable<QrCode> SansSession() => db.QrCodes.Where(q => !q.Presences.Any());
+
+    public async Task<CodesSansSessionDto> CompterSansSessionAsync(CancellationToken ct)
+    {
+        var parStatut = await SansSession().GroupBy(q => q.Statut).Select(g => new { g.Key, Nombre = g.Count() }).ToListAsync(ct);
+        var total = parStatut.Sum(s => s.Nombre);
+        var desactives = parStatut.Where(s => s.Key == QrCodeStatut.Desactive).Sum(s => s.Nombre);
+        return new CodesSansSessionDto(total, desactives, total - desactives);
+    }
+
+    /// <summary>Désactive tous les QR Codes sans session (réactivables).</summary>
+    public async Task<int> DesactiverSansSessionAsync(CancellationToken ct) =>
+        await SansSession().Where(q => q.Statut != QrCodeStatut.Desactive)
+            .ExecuteUpdateAsync(s => s.SetProperty(q => q.Statut, QrCodeStatut.Desactive)
+                .SetProperty(q => q.UpdatedAt, horloge.GetUtcNow()), ct);
+
+    /// <summary>
+    /// Supprime définitivement tous les QR Codes sans session. La condition « aucune présence » est évaluée
+    /// dans la requête de suppression elle-même : un code utilisé entre-temps n'est jamais supprimé.
+    /// </summary>
+    public Task<int> SupprimerSansSessionAsync(CancellationToken ct) => SansSession().ExecuteDeleteAsync(ct);
+
+    /// <summary>Réactive les codes désactivés : Actif si un participant y est déjà rattaché, sinon Inactif.</summary>
+    public async Task<int> ReactiverTousAsync(CancellationToken ct)
+    {
+        var maintenant = horloge.GetUtcNow();
+        var actifs = await db.QrCodes.Where(q => q.Statut == QrCodeStatut.Desactive && q.DateActivation != null)
+            .ExecuteUpdateAsync(s => s.SetProperty(q => q.Statut, QrCodeStatut.Actif).SetProperty(q => q.UpdatedAt, maintenant), ct);
+        var inactifs = await db.QrCodes.Where(q => q.Statut == QrCodeStatut.Desactive)
+            .ExecuteUpdateAsync(s => s.SetProperty(q => q.Statut, QrCodeStatut.Inactif).SetProperty(q => q.UpdatedAt, maintenant), ct);
+        return actifs + inactifs;
+    }
+
+    /// <summary>Désactive ou réactive un code ; un code ayant au moins une session ne peut pas être désactivé.</summary>
+    public async Task ChangerActivationAsync(string codeBrut, bool desactiver, CancellationToken ct)
+    {
+        var code = CodeQr.Normaliser(codeBrut) ?? throw new IntrouvableException("QR Code introuvable.");
+        var qr = await db.QrCodes.FirstOrDefaultAsync(q => q.Code == code, ct) ?? throw new IntrouvableException("QR Code introuvable.");
+        if (desactiver)
+        {
+            if (await db.Presences.AnyAsync(p => p.QrCode == code, ct))
+                throw new RegleMetierException("Ce QR Code a déjà au moins une session : il ne peut pas être désactivé.");
+            qr.Statut = QrCodeStatut.Desactive;
+        }
+        else if (qr.Statut == QrCodeStatut.Desactive)
+        {
+            qr.Statut = qr.DateActivation is null ? QrCodeStatut.Inactif : QrCodeStatut.Actif;
+        }
+        qr.UpdatedAt = horloge.GetUtcNow();
+        await db.SaveChangesAsync(ct);
+    }
+
     /// <summary>Ajoute les codes absents avec le statut Inactif ; les codes déjà présents sont ignorés.</summary>
     public async Task<ImportResultatDto> ImporterAsync(Stream fichier, string nomFichier, CancellationToken ct)
     {

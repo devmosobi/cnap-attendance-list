@@ -16,6 +16,38 @@ public class QrCodesController(QrCodeService service) : ControllerBase
     [HttpGet]
     public Task<List<QrCodeListeDto>> Lister([FromQuery] QrCodeFiltre filtre, CancellationToken ct) => service.ListerToutAsync(filtre, ct);
 
+    [HttpGet("sans-session")]
+    [Authorize(Policy = Politiques.Administrateur)]
+    public Task<CodesSansSessionDto> CompterSansSession(CancellationToken ct) => service.CompterSansSessionAsync(ct);
+
+    [HttpPost("sans-session/desactiver")]
+    [Authorize(Policy = Politiques.Administrateur)]
+    public async Task<OperationMasseDto> DesactiverSansSession(CancellationToken ct) => new(await service.DesactiverSansSessionAsync(ct));
+
+    [HttpPost("sans-session/supprimer")]
+    [Authorize(Policy = Politiques.Administrateur)]
+    public async Task<OperationMasseDto> SupprimerSansSession(CancellationToken ct) => new(await service.SupprimerSansSessionAsync(ct));
+
+    [HttpPost("desactives/reactiver")]
+    [Authorize(Policy = Politiques.Administrateur)]
+    public async Task<OperationMasseDto> ReactiverTous(CancellationToken ct) => new(await service.ReactiverTousAsync(ct));
+
+    [HttpPost("{code}/desactiver")]
+    [Authorize(Policy = Politiques.Administrateur)]
+    public async Task<IActionResult> Desactiver(string code, CancellationToken ct)
+    {
+        await service.ChangerActivationAsync(code, desactiver: true, ct);
+        return NoContent();
+    }
+
+    [HttpPost("{code}/reactiver")]
+    [Authorize(Policy = Politiques.Administrateur)]
+    public async Task<IActionResult> Reactiver(string code, CancellationToken ct)
+    {
+        await service.ChangerActivationAsync(code, desactiver: false, ct);
+        return NoContent();
+    }
+
     [HttpGet("{code}")]
     public Task<QrCodeDetailDto> Obtenir(string code, CancellationToken ct) => service.ObtenirAsync(code, ct);
 

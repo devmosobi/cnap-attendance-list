@@ -88,6 +88,11 @@ public record PresenceHistoriqueDto(
     bool EstInvalidee,
     string? MotifInvalidation);
 
+/// <summary>QR Codes sans aucune session associée (aucune présence, même invalidée).</summary>
+public record CodesSansSessionDto(int Total, int Desactives, int ADesactiver);
+
+public record OperationMasseDto(int Nombre);
+
 public record ModifierParticipantRequest(string NomComplet, string Email, string ClubCode);
 
 /// <summary>MisAJour : éléments existants modifiés par l'import (type d'un club, par exemple).</summary>

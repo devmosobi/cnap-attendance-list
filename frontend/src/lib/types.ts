@@ -8,7 +8,7 @@ export type ClubOption = { code: string; nom: string; type: TypeClub };
 export type PresencePublic = { sessionId: string; session: string; heureDePointage: string };
 export type ScanEtat = {
   code: string;
-  statut: "Inactif" | "Actif";
+  statut: "Inactif" | "Actif" | "Desactive";
   participant: { nomComplet: string; emailMasque: string; clubNom: string | null } | null;
   seminaires: SeminairePublic[];
   clubs: ClubOption[];
