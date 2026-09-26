@@ -64,6 +64,43 @@ public class RapportService(AppDbContext db)
             .Select(s => new RapportLigneDto(s.Id.ToString(), s.Seminaire.Designation + " – " + s.Designation, s.Presences.Count))
             .ToListAsync(ct);
 
+    /// <summary>
+    /// Présents d'un séminaire (au moins une session pointée), triés par club puis par nom,
+    /// avec les sessions suivies dans l'ordre chronologique.
+    /// </summary>
+    public async Task<List<PresentClubDto>> PresentsParClubAsync(Guid seminaireId, CancellationToken ct)
+    {
+        var pointages = await db.Presences.AsNoTracking()
+            .Where(p => p.Session.SeminaireId == seminaireId)
+            .Select(p => new
+            {
+                p.QrCode,
+                p.QrCodeNavigation.NomComplet,
+                p.QrCodeNavigation.Email,
+                p.QrCodeNavigation.ClubCode,
+                Club = p.QrCodeNavigation.Club != null ? p.QrCodeNavigation.Club.Nom : null,
+                Type = p.QrCodeNavigation.Club != null ? (TypeClub?)p.QrCodeNavigation.Club.Type : null,
+                Session = p.Session.Designation,
+                p.Session.HeureDebut,
+                p.HeureDePointage
+            })
+            .ToListAsync(ct);
+
+        return pointages
+            .GroupBy(p => p.QrCode)
+            .Select(g =>
+            {
+                var p = g.First();
+                return new PresentClubDto(g.Key, p.NomComplet, p.Email, p.ClubCode, p.Club, p.Type,
+                    g.OrderBy(x => x.HeureDebut).Select(x => x.Session).Distinct().ToList(),
+                    g.Min(x => x.HeureDePointage));
+            })
+            .OrderBy(p => p.Club is null) // participants sans club en dernier
+            .ThenBy(p => p.Club, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(p => p.NomComplet, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+    }
+
     /// <summary>Présences par session et par résultat du contrôle du lieu (sessions sans présence incluses).</summary>
     public async Task<List<RapportLieuDto>> PresencesParLieuAsync(Guid? seminaireId, CancellationToken ct)
     {
