@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Cnap.Attendance.Api.Infrastructure;
 using Cnap.Attendance.Core.Dtos;
 using Cnap.Attendance.Infrastructure.Services;
@@ -41,6 +42,22 @@ public class PresencesController(PresenceService service) : ControllerBase
     /// <summary>Liste complète : tri, filtres de colonnes, pagination et exports sont faits dans la console.</summary>
     [HttpGet]
     public Task<List<PresenceListeDto>> Lister([FromQuery] PresenceFiltre filtre, CancellationToken ct) => service.ListerToutAsync(filtre, ct);
+
+    /// <summary>Exclut la présence des statistiques (ex. : pointage hors du site de la formation).</summary>
+    [HttpPost("{id:guid}/invalider")]
+    public async Task<IActionResult> Invalider(Guid id, InvaliderPresenceRequest requete, CancellationToken ct)
+    {
+        var auteur = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue(ClaimTypes.Name) ?? "inconnu";
+        await service.InvaliderAsync(id, requete.Motif, auteur, ct);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/retablir")]
+    public async Task<IActionResult> Retablir(Guid id, CancellationToken ct)
+    {
+        await service.RetablirAsync(id, ct);
+        return NoContent();
+    }
 }
 
 [ApiController]

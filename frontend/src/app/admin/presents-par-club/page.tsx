@@ -40,7 +40,9 @@ export default function PagePresentsParClub() {
   }, [seminaires.donnees, seminaireId]);
 
   const presents = useDonnees<PresentClub[]>(seminaireId ? `/api/admin/rapports/presents-par-club${construireQuery({ seminaireId })}` : null);
-  const nomSeminaire = seminaires.donnees?.find((s) => s.id === seminaireId)?.designation ?? "";
+  const seminaire = seminaires.donnees?.find((s) => s.id === seminaireId);
+  const nomSeminaire = seminaire?.designation ?? "";
+  const inscrits = seminaire?.inscritsDeclares ?? null;
 
   const groupes = useMemo<Groupe[]>(() => {
     const r = normaliser(recherche);
@@ -111,10 +113,11 @@ export default function PagePresentsParClub() {
             titre: "Synthèse",
             colonnes: [{ titre: "Indicateur" }, { titre: "Valeur", type: "nombre" }],
             lignes: [
-              ["Nombre d'inscrits", ""], // rempli à la main
+              ["Nombre d'inscrits", inscrits ?? ""], // vide si non renseigné sur le séminaire (à remplir à la main)
               ["Nombre de participants (global)", nbPresents],
               ["Nombre de clubs représentés", nbClubsRepresentes],
               ["Nombre de sessions de formation", nbSessions],
+              ...(inscrits ? [["Taux de participation (participants / inscrits)", formatPart(part(nbPresents, inscrits))]] : []),
             ],
             hauteurLigne: 9,
           },
@@ -213,6 +216,7 @@ export default function PagePresentsParClub() {
           {nbPresents} présent{nbPresents > 1 ? "s" : ""} · {groupes.length} club{groupes.length > 1 ? "s" : ""}
           {presents.donnees && nbPresents !== presents.donnees.length && ` (sur ${presents.donnees.length})`}
           {nbPresents > 0 && ` · moyenne ${formatMoyenne(moyenneGenerale)} session(s) suivie(s) par présent`}
+          {inscrits ? ` · ${inscrits} inscrit${inscrits > 1 ? "s" : ""} (participation ${formatPart(part(nbPresents, inscrits))})` : ""}
         </p>
         {(presents.erreur || erreurExport) && (
           <div className="mt-3">

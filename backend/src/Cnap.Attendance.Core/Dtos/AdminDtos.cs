@@ -13,7 +13,8 @@ public record SeminaireDto(
     ControlePosition ControlePosition,
     double? Latitude,
     double? Longitude,
-    int RayonMetres);
+    int RayonMetres,
+    int? InscritsDeclares);
 
 public record SeminaireRequest(
     string Designation,
@@ -22,7 +23,8 @@ public record SeminaireRequest(
     ControlePosition ControlePosition = ControlePosition.Desactive,
     double? Latitude = null,
     double? Longitude = null,
-    int RayonMetres = 200);
+    int RayonMetres = 200,
+    int? InscritsDeclares = null);
 
 public record ActivationRequest(bool EstActif);
 
@@ -82,7 +84,9 @@ public record PresenceHistoriqueDto(
     string Seminaire,
     DateTimeOffset HeureDePointage,
     ResultatPosition ResultatPosition,
-    int? DistanceMetres);
+    int? DistanceMetres,
+    bool EstInvalidee,
+    string? MotifInvalidation);
 
 public record ModifierParticipantRequest(string NomComplet, string Email, string ClubCode);
 
@@ -105,7 +109,13 @@ public record PresenceListeDto(
     string Seminaire,
     DateTimeOffset HeureDePointage,
     ResultatPosition ResultatPosition,
-    int? DistanceMetres);
+    int? DistanceMetres,
+    bool EstInvalidee,
+    string? MotifInvalidation,
+    string? InvalideePar,
+    DateTimeOffset? InvalideeLe);
+
+public record InvaliderPresenceRequest(string? Motif);
 
 // Rapports
 public record RapportLigneDto(string Cle, string Libelle, int Valeur);
@@ -122,7 +132,8 @@ public record PresentClubDto(
     DateTimeOffset DerniereValidation);
 
 /// <summary>Répartition des présences d'une session selon le contrôle du lieu.</summary>
-public record RapportLieuDto(string Cle, string Session, int SurPlace, int HorsZone, int NonLocalise, int NonControle);
+/// <summary>Invalidees : présences invalidées de la session, exclues des autres comptes.</summary>
+public record RapportLieuDto(string Cle, string Session, int SurPlace, int HorsZone, int NonLocalise, int NonControle, int Invalidees);
 
 // Paramètres SMTP
 public record ParametresSmtpDto(

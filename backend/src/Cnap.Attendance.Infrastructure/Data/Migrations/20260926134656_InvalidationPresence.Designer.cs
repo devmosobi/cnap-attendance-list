@@ -3,6 +3,7 @@ using System;
 using Cnap.Attendance.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Cnap.Attendance.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260926134656_InvalidationPresence")]
+    partial class InvalidationPresence
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -422,10 +425,6 @@ namespace Cnap.Attendance.Infrastructure.Data.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("est_actif");
 
-                    b.Property<int?>("InscritsDeclares")
-                        .HasColumnType("integer")
-                        .HasColumnName("inscrits_declares");
-
                     b.Property<double?>("Latitude")
                         .HasColumnType("double precision")
                         .HasColumnName("latitude");
@@ -454,8 +453,6 @@ namespace Cnap.Attendance.Infrastructure.Data.Migrations
                     b.ToTable("seminaires", null, t =>
                         {
                             t.HasCheckConstraint("ck_seminaires_controle_position", "controle_position = 'Desactive' OR (latitude IS NOT NULL AND longitude IS NOT NULL)");
-
-                            t.HasCheckConstraint("ck_seminaires_inscrits_declares", "inscrits_declares IS NULL OR inscrits_declares >= 0");
 
                             t.HasCheckConstraint("ck_seminaires_rayon", "rayon_metres BETWEEN 50 AND 500");
                         });

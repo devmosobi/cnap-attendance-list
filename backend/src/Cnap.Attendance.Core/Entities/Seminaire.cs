@@ -10,6 +10,9 @@ public class Seminaire
     public string? Description { get; set; }
     public bool EstActif { get; set; }
 
+    /// <summary>Nombre d'inscrits saisi par les organisateurs (distinct des billets activés au scan).</summary>
+    public int? InscritsDeclares { get; set; }
+
     /// <summary>Vérification que le participant valide sa présence sur le lieu de la formation.</summary>
     public ControlePosition ControlePosition { get; set; } = ControlePosition.Desactive;
     public double? Latitude { get; set; }

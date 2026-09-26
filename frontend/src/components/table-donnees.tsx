@@ -50,6 +50,7 @@ export function TableDonnees<T>({
   triInitial,
   outils,
   exportable = true,
+  exclureDesExports,
   taillesPage = TAILLES,
 }: {
   lignes: T[] | null;
@@ -65,6 +66,8 @@ export function TableDonnees<T>({
   outils?: React.ReactNode;
   exportable?: boolean;
   taillesPage?: readonly number[];
+  /** Lignes affichées mais jamais exportées (ex. : présences invalidées), avec le libellé indiqué dans le PDF. */
+  exclureDesExports?: { exclure: (ligne: T) => boolean; libelle: string };
 }) {
   const [tri, setTri] = useState<{ cle: string; sens: "asc" | "desc" } | null>(triInitial ?? null);
   const [filtres, setFiltres] = useState<Record<string, string>>({});
@@ -131,12 +134,17 @@ export function TableDonnees<T>({
       .filter((c) => filtres[c.cle])
       .map((c) => `${c.titre} ${c.filtre === "liste" ? "=" : "contient"} « ${filtres[c.cle]} »`)
       .join(" ; ");
+    const exportees = exclureDesExports ? filtrees.filter((l) => !exclureDesExports.exclure(l)) : filtrees;
+    const nbExclues = filtrees.length - exportees.length;
     const document: DocumentExport = {
       titre: titreExport,
-      sousTitre: `${filtrees.length} ligne${filtrees.length > 1 ? "s" : ""}${resumeFiltres ? ` · Filtres : ${resumeFiltres}` : ""}`,
+      sousTitre:
+        `${exportees.length} ligne${exportees.length > 1 ? "s" : ""}` +
+        (nbExclues > 0 ? ` (${nbExclues} ${exclureDesExports!.libelle})` : "") +
+        (resumeFiltres ? ` · Filtres : ${resumeFiltres}` : ""),
       nomFichier,
       colonnes: colonnesExport.map((c) => ({ titre: c.titre, type: c.type })),
-      lignes: filtrees.map((l) =>
+      lignes: exportees.map((l) =>
         colonnesExport.map((c): ValeurCellule => {
           const v = c.valeur(l);
           if (c.type === "nombre" && typeof v === "number") return v;

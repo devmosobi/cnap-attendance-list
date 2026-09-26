@@ -3,7 +3,7 @@
 import { RefreshCw, Sheet } from "lucide-react";
 import { useRef, useState } from "react";
 import { GraphiqueBarres } from "@/components/graphique-barres";
-import { RapportLieuCarte, pourcentage, totauxLieu } from "@/components/rapport-lieu";
+import { RapportLieuCarte, pourcentage, totalInvalidees, totauxLieu } from "@/components/rapport-lieu";
 import { TableDonnees } from "@/components/table-donnees";
 import { Alerte, Bouton, Carte, EnTete } from "@/components/ui";
 import { construireQuery } from "@/lib/api";
@@ -19,9 +19,9 @@ const nomSession = (libelle: string) => libelle.split(" – ").slice(1).join(" �
 
 const RAPPORTS = {
   sessions: { titre: "Présences par session", unite: "Présences", colonne: "Session", nomFichier: "presences-par-session", libelleAxe: nomSession },
-  seminaires: { titre: "Inscrits par séminaire", unite: "Inscrits", colonne: "Séminaire", nomFichier: "inscrits-par-seminaire" },
-  types: { titre: "Inscrits par type de club", unite: "Inscrits", colonne: "Type de club", nomFichier: "inscrits-par-type-club" },
-  clubs: { titre: "Inscrits par club", unite: "Inscrits", colonne: "Club", nomFichier: "inscrits-par-club" },
+  seminaires: { titre: "Participants par séminaire", unite: "Participants", colonne: "Séminaire", nomFichier: "participants-par-seminaire" },
+  types: { titre: "Participants par type de club", unite: "Participants", colonne: "Type de club", nomFichier: "participants-par-type-club" },
+  clubs: { titre: "Participants par club", unite: "Participants", colonne: "Club", nomFichier: "participants-par-club" },
 } satisfies Record<string, DefinitionRapport>;
 
 export default function TableauDeBord() {
@@ -81,7 +81,10 @@ export default function TableauDeBord() {
         {
           titre: `Contrôle du lieu · ${t.total} présences`,
           colonnes: [{ titre: "Résultat" }, { titre: "Présences", type: "nombre" }, { titre: "Part" }],
-          lignes: resultats.map((r) => [LIBELLES_RESULTAT[r], t[r], pourcentage(t[r], t.total)]),
+          lignes: [
+            ...resultats.map((r) => [LIBELLES_RESULTAT[r], t[r], pourcentage(t[r], t.total)]),
+            ["Présences invalidées (exclues)", totalInvalidees(lieu.donnees), ""],
+          ],
         },
         {
           titre: "Contrôle du lieu par session",
@@ -91,8 +94,9 @@ export default function TableauDeBord() {
             { titre: "Hors zone", type: "nombre" },
             { titre: "Non localisée", type: "nombre" },
             { titre: "Non contrôlé", type: "nombre" },
+            { titre: "Invalidées", type: "nombre" },
           ],
-          lignes: (lieu.donnees ?? []).map((l) => [l.session, l.surPlace, l.horsZone, l.nonLocalise, l.nonControle]),
+          lignes: (lieu.donnees ?? []).map((l) => [l.session, l.surPlace, l.horsZone, l.nonLocalise, l.nonControle, l.invalidees]),
         },
       ];
       await exporterPdfSections({
@@ -119,7 +123,7 @@ export default function TableauDeBord() {
     <>
       <EnTete
         titre="Tableau de bord"
-        description="Inscriptions et présences en temps réel."
+        description="Participants et présences en temps réel (présences invalidées et QR Codes sans présence exclus)."
         actions={
           <>
             <select className="champ w-auto" value={seminaireId} onChange={(e) => setSeminaireId(e.target.value)} aria-label="Filtrer par séminaire">

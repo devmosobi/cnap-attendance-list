@@ -17,9 +17,18 @@ type Formulaire = {
   controlePosition: ControlePosition;
   coordonnees: string;
   rayonMetres: number;
+  inscritsDeclares: string;
 };
 
-const NOUVEAU: Formulaire = { designation: "", description: "", estActif: false, controlePosition: "Desactive", coordonnees: "", rayonMetres: 200 };
+const NOUVEAU: Formulaire = {
+  designation: "",
+  description: "",
+  estActif: false,
+  controlePosition: "Desactive",
+  coordonnees: "",
+  rayonMetres: 200,
+  inscritsDeclares: "",
+};
 
 const versFormulaire = (s: Seminaire): Formulaire => ({
   id: s.id,
@@ -29,6 +38,7 @@ const versFormulaire = (s: Seminaire): Formulaire => ({
   controlePosition: s.controlePosition,
   coordonnees: s.latitude !== null && s.longitude !== null ? `${s.latitude}, ${s.longitude}` : "",
   rayonMetres: s.rayonMetres,
+  inscritsDeclares: s.inscritsDeclares === null ? "" : String(s.inscritsDeclares),
 });
 
 export default function PageSeminaires() {
@@ -93,7 +103,15 @@ export default function PageSeminaires() {
                 ),
             },
             { cle: "sessions", titre: "Sessions", valeur: (s) => s.nombreSessions, type: "nombre" },
-            { cle: "inscrits", titre: "Inscrits", valeur: (s) => s.nombreInscrits, type: "nombre" },
+            {
+              cle: "inscritsDeclares",
+              titre: "Nombre d'inscrits",
+              valeur: (s) => s.inscritsDeclares ?? "",
+              texte: (s) => (s.inscritsDeclares === null ? "" : String(s.inscritsDeclares)),
+              type: "nombre",
+              filtre: false,
+            },
+            { cle: "inscrits", titre: "Participants", valeur: (s) => s.nombreInscrits, type: "nombre", filtre: false },
           ]}
           actions={(s) => (
             <>
@@ -160,6 +178,8 @@ function FormulaireSeminaire({ valeurs, onFermer, onEnregistre }: { valeurs: For
     setErreur(null);
     if (v.coordonnees.trim() && !coordonnees) return setErreur("Coordonnées GPS illisibles. Format attendu : 5.324012, -4.018034");
     if (v.controlePosition !== "Desactive" && !coordonnees) return setErreur("Renseignez les coordonnées GPS du lieu pour activer le contrôle.");
+    const inscrits = v.inscritsDeclares.trim() === "" ? null : Number(v.inscritsDeclares);
+    if (inscrits !== null && (!Number.isInteger(inscrits) || inscrits < 0)) return setErreur("Le nombre d'inscrits doit être un nombre entier positif.");
     setEnvoi(true);
     try {
       const corps = {
@@ -170,6 +190,7 @@ function FormulaireSeminaire({ valeurs, onFermer, onEnregistre }: { valeurs: For
         latitude: coordonnees?.latitude ?? null,
         longitude: coordonnees?.longitude ?? null,
         rayonMetres: v.rayonMetres,
+        inscritsDeclares: inscrits,
       };
       if (v.id) await api(`/api/admin/seminaires/${v.id}`, { method: "PUT", body: corps });
       else await api("/api/admin/seminaires", { method: "POST", body: corps });
@@ -189,6 +210,17 @@ function FormulaireSeminaire({ valeurs, onFermer, onEnregistre }: { valeurs: For
         </Champ>
         <Champ libelle="Description">
           <textarea className="champ" rows={2} value={v.description} onChange={(e) => setV({ ...v, description: e.target.value })} />
+        </Champ>
+        <Champ libelle="Nombre d'inscrits" aide="Facultatif. Repris dans la synthèse du rapport « Présents par club » (taux de participation).">
+          <input
+            type="number"
+            min={0}
+            step={1}
+            inputMode="numeric"
+            className="champ sm:max-w-40"
+            value={v.inscritsDeclares}
+            onChange={(e) => setV({ ...v, inscritsDeclares: e.target.value })}
+          />
         </Champ>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" className="size-4 accent-rotary" checked={v.estActif} onChange={(e) => setV({ ...v, estActif: e.target.checked })} />

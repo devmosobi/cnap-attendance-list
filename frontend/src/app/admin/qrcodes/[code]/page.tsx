@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Pencil } from "lucide-react";
 import { use, useState } from "react";
 import { BadgeLieu } from "@/components/badge-lieu";
+import { BadgeValidite, libelleValidite } from "@/components/badge-validite";
 import { TableDonnees } from "@/components/table-donnees";
 import { Alerte, Badge, Bouton, Carte, Chargement, Champ, EnTete, Modale } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -55,6 +56,7 @@ export default function PageQrCode({ params }: { params: Promise<{ code: string 
               titreExport={`Historique des présences – ${qr.nomComplet ?? qr.code}`}
               nomFichier={`presences-${qr.code}`}
               triInitial={{ cle: "pointage", sens: "asc" }}
+              exclureDesExports={{ exclure: (p) => p.estInvalidee, libelle: "présence(s) invalidée(s) exclue(s)" }}
               colonnes={[
                 { cle: "seminaire", titre: "Séminaire", valeur: (p) => p.seminaire, filtre: "liste" },
                 { cle: "session", titre: "Session", valeur: (p) => p.session, filtre: "liste" },
@@ -81,6 +83,15 @@ export default function PageQrCode({ params }: { params: Promise<{ code: string 
                   type: "nombre",
                   filtre: false,
                 },
+                {
+                  cle: "validite",
+                  titre: "Validité",
+                  valeur: (p) => libelleValidite(p.estInvalidee),
+                  filtre: "liste",
+                  rendu: (p) => <BadgeValidite estInvalidee={p.estInvalidee} motif={p.motifInvalidation} />,
+                  exportable: false,
+                },
+                { cle: "motif", titre: "Motif d'invalidation", valeur: (p) => p.motifInvalidation ?? "", classe: "text-gris", exportable: false },
               ]}
             />
           </Carte>

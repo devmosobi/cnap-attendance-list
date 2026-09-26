@@ -66,7 +66,7 @@ export default function PageClubs() {
             { cle: "nom", titre: "Nom", valeur: (c) => c.nom, rendu: (c) => <span className="font-semibold">{c.nom}</span> },
             { cle: "type", titre: "Type", valeur: (c) => LIBELLES_TYPE_CLUB[c.type], filtre: "liste" },
             { cle: "statut", titre: "Statut", valeur: (c) => (c.estActif ? "Actif" : "Inactif"), filtre: "liste", rendu: (c) => <Badge actif={c.estActif} /> },
-            { cle: "inscrits", titre: "Inscrits", valeur: (c) => c.nombreInscrits, type: "nombre" },
+            { cle: "inscrits", titre: "Participants", valeur: (c) => c.nombreInscrits, type: "nombre" },
           ]}
           actions={(c) => (
             <>

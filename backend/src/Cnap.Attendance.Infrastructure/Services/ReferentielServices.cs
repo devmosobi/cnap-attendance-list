@@ -13,15 +13,15 @@ public class SeminaireService(AppDbContext db, TimeProvider horloge)
         db.Seminaires.AsNoTracking()
             .OrderByDescending(s => s.EstActif).ThenBy(s => s.Designation)
             .Select(s => new SeminaireDto(s.Id, s.Designation, s.Description, s.EstActif,
-                s.Sessions.Count, db.QrCodes.Count(q => q.SeminaireId == s.Id),
-                s.ControlePosition, s.Latitude, s.Longitude, s.RayonMetres))
+                s.Sessions.Count, db.QrCodes.Count(q => q.Presences.Any(p => !p.EstInvalidee && p.Session.SeminaireId == s.Id)),
+                s.ControlePosition, s.Latitude, s.Longitude, s.RayonMetres, s.InscritsDeclares))
             .ToListAsync(ct);
 
     public async Task<SeminaireDto> ObtenirAsync(Guid id, CancellationToken ct) =>
         await db.Seminaires.AsNoTracking().Where(s => s.Id == id)
             .Select(s => new SeminaireDto(s.Id, s.Designation, s.Description, s.EstActif,
-                s.Sessions.Count, db.QrCodes.Count(q => q.SeminaireId == s.Id),
-                s.ControlePosition, s.Latitude, s.Longitude, s.RayonMetres))
+                s.Sessions.Count, db.QrCodes.Count(q => q.Presences.Any(p => !p.EstInvalidee && p.Session.SeminaireId == s.Id)),
+                s.ControlePosition, s.Latitude, s.Longitude, s.RayonMetres, s.InscritsDeclares))
             .FirstOrDefaultAsync(ct)
         ?? throw new IntrouvableException("Séminaire introuvable.");
 
@@ -82,6 +82,7 @@ public class SeminaireService(AppDbContext db, TimeProvider horloge)
         seminaire.Latitude = requete.Latitude;
         seminaire.Longitude = requete.Longitude;
         seminaire.RayonMetres = requete.RayonMetres;
+        seminaire.InscritsDeclares = requete.InscritsDeclares;
     }
 
     internal static string? Nettoyer(string? valeur) => string.IsNullOrWhiteSpace(valeur) ? null : valeur.Trim();
@@ -159,7 +160,7 @@ public class SessionService(AppDbContext db, TimeProvider horloge)
 
     private static IQueryable<SessionDto> Projeter(IQueryable<Session> requete) =>
         requete.Select(s => new SessionDto(s.Id, s.SeminaireId, s.Seminaire.Designation, s.Designation,
-            s.HeureDebut, s.HeureFin, s.Description, s.EstActif, s.Presences.Count));
+            s.HeureDebut, s.HeureFin, s.Description, s.EstActif, s.Presences.Count(p => !p.EstInvalidee)));
 
     private async Task VerifierSeminaireAsync(Guid seminaireId, CancellationToken ct)
     {
@@ -179,7 +180,8 @@ public partial class ClubService(AppDbContext db)
     public Task<List<ClubDto>> ListerAsync(CancellationToken ct) =>
         db.Clubs.AsNoTracking()
             .OrderBy(c => c.Nom)
-            .Select(c => new ClubDto(c.Code, c.Nom, c.Type, c.EstActif, db.QrCodes.Count(q => q.ClubCode == c.Code)))
+            .Select(c => new ClubDto(c.Code, c.Nom, c.Type, c.EstActif,
+                db.QrCodes.Count(q => q.ClubCode == c.Code && q.Presences.Any(p => !p.EstInvalidee))))
             .ToListAsync(ct);
 
     public async Task<ClubDto> CreerAsync(ClubCreationRequest requete, CancellationToken ct)
@@ -205,7 +207,7 @@ public partial class ClubService(AppDbContext db)
         club.Type = requete.Type;
         club.EstActif = requete.EstActif;
         await db.SaveChangesAsync(ct);
-        return new ClubDto(club.Code, club.Nom, club.Type, club.EstActif, await db.QrCodes.CountAsync(q => q.ClubCode == club.Code, ct));
+        return new ClubDto(club.Code, club.Nom, club.Type, club.EstActif, await db.QrCodes.CountAsync(q => q.ClubCode == club.Code && q.Presences.Any(p => !p.EstInvalidee), ct));
     }
 
     public async Task ActiverAsync(string code, bool estActif, CancellationToken ct)

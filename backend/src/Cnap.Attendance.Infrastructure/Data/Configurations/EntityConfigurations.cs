@@ -11,6 +11,7 @@ public class SeminaireConfiguration : IEntityTypeConfiguration<Seminaire>
     {
         b.ToTable("seminaires", t =>
         {
+            t.HasCheckConstraint("ck_seminaires_inscrits_declares", "inscrits_declares IS NULL OR inscrits_declares >= 0");
             t.HasCheckConstraint("ck_seminaires_rayon", $"rayon_metres BETWEEN {Seminaire.RayonMinimumMetres} AND {Seminaire.RayonMaximumMetres}");
             t.HasCheckConstraint("ck_seminaires_controle_position",
                 "controle_position = 'Desactive' OR (latitude IS NOT NULL AND longitude IS NOT NULL)");
@@ -97,6 +98,9 @@ public class PresenceConfiguration : IEntityTypeConfiguration<Presence>
         b.Property(x => x.HeureDePointage).HasDefaultValueSql("now()");
         b.Property(x => x.ResultatPosition).HasConversion<string>().HasMaxLength(20)
             .HasDefaultValue(ResultatPosition.NonControle).ValueGeneratedNever();
+        b.Property(x => x.EstInvalidee).HasDefaultValue(false).ValueGeneratedNever();
+        b.Property(x => x.MotifInvalidation).HasMaxLength(500);
+        b.Property(x => x.InvalideePar).HasMaxLength(254);
         b.HasOne(x => x.QrCodeNavigation).WithMany(q => q.Presences).HasForeignKey(x => x.QrCode).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.Session).WithMany(s => s.Presences).HasForeignKey(x => x.SessionId).OnDelete(DeleteBehavior.Restrict);
         // Règle métier centrale : une seule présence par QR Code et par session.

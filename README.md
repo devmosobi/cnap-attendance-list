@@ -63,6 +63,17 @@ docker-compose.local.yml               surcharge pour tester sur Docker Desktop
   que la présence, puis envoyé en tâche de fond avec reprises espacées (1 min, 5 min, 15 min, 1 h, 4 h).
 - Les heures sont stockées en UTC et affichées dans le fuseau `Africa/Abidjan` (UTC+0).
 
+### Présences invalidées et statistiques
+
+- Depuis **Suivi des présences**, une présence peut être **invalidée** (motif facultatif, par exemple un pointage hors du
+  site) puis rétablie. L'auteur et la date sont enregistrés.
+- Une présence invalidée reste visible dans le suivi, mais elle est **exclue de toutes les statistiques et de tous les
+  exports**. Elle continue d'occuper la session : le participant ne peut pas la pointer de nouveau.
+- Les statistiques de participants (tableau de bord, séminaires, clubs, présents par club) ne comptent que les QR Codes
+  ayant **au moins une présence valide** ; un QR Code sans présence valide n'est compté nulle part.
+- Le **nombre d'inscrits** d'un séminaire se saisit à la main (Séminaires > Modifier). Il est repris dans la synthèse du
+  PDF « Présents par club » avec le taux de participation.
+
 ### Contrôle du lieu de la formation
 
 Pour vérifier que les participants valident leur présence sur place, chaque séminaire peut activer un contrôle de

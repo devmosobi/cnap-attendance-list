@@ -23,6 +23,14 @@ public class ValiderPresenceRequestValidator : AbstractValidator<ValiderPresence
     }
 }
 
+public class InvaliderPresenceRequestValidator : AbstractValidator<InvaliderPresenceRequest>
+{
+    public InvaliderPresenceRequestValidator()
+    {
+        RuleFor(x => x.Motif).MaximumLength(500);
+    }
+}
+
 public class SeminaireRequestValidator : AbstractValidator<SeminaireRequest>
 {
     public SeminaireRequestValidator()
@@ -30,6 +38,8 @@ public class SeminaireRequestValidator : AbstractValidator<SeminaireRequest>
         RuleFor(x => x.Designation).NotEmpty().WithMessage("La désignation est requise.").MaximumLength(200);
         RuleFor(x => x.Description).MaximumLength(4000);
         RuleFor(x => x.ControlePosition).IsInEnum();
+        RuleFor(x => x.InscritsDeclares).InclusiveBetween(0, 100_000)
+            .WithMessage("Le nombre d'inscrits doit être compris entre 0 et 100 000.");
         RuleFor(x => x.RayonMetres).InclusiveBetween(Seminaire.RayonMinimumMetres, Seminaire.RayonMaximumMetres)
             .WithMessage($"Le rayon doit être compris entre {Seminaire.RayonMinimumMetres} et {Seminaire.RayonMaximumMetres} mètres.");
         RuleFor(x => x.Latitude).InclusiveBetween(-90, 90).WithMessage("Latitude invalide.");

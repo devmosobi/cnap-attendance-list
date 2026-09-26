@@ -30,11 +30,14 @@ export type Seminaire = {
   description: string | null;
   estActif: boolean;
   nombreSessions: number;
+  /** Participants : QR Codes ayant au moins une présence valide dans le séminaire. */
   nombreInscrits: number;
   controlePosition: ControlePosition;
   latitude: number | null;
   longitude: number | null;
   rayonMetres: number;
+  /** Nombre d'inscrits saisi par les organisateurs (distinct des billets activés). */
+  inscritsDeclares: number | null;
 };
 export type Session = {
   id: string;
@@ -69,6 +72,8 @@ export type PresenceHistorique = {
   heureDePointage: string;
   resultatPosition: ResultatPosition;
   distanceMetres: number | null;
+  estInvalidee: boolean;
+  motifInvalidation: string | null;
 };
 export type QrCodeDetail = Omit<QrCodeListe, "nombrePresences" | "typeClub"> & { presences: PresenceHistorique[] };
 export type ImportResultat = { lignes: number; crees: number; existants: number; erreurs: string[]; misAJour: number };
@@ -86,6 +91,10 @@ export type PresenceListe = {
   heureDePointage: string;
   resultatPosition: ResultatPosition;
   distanceMetres: number | null;
+  estInvalidee: boolean;
+  motifInvalidation: string | null;
+  invalideePar: string | null;
+  invalideeLe: string | null;
 };
 export type RapportLigne = { cle: string; libelle: string; valeur: number };
 export type PresentClub = {
@@ -98,7 +107,15 @@ export type PresentClub = {
   premiereValidation: string;
   derniereValidation: string;
 };
-export type RapportLieu = { cle: string; session: string; surPlace: number; horsZone: number; nonLocalise: number; nonControle: number };
+export type RapportLieu = {
+  cle: string;
+  session: string;
+  surPlace: number;
+  horsZone: number;
+  nonLocalise: number;
+  nonControle: number;
+  invalidees: number;
+};
 export type ParametresSmtp = {
   hote: string;
   port: number;

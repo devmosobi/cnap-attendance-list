@@ -6,8 +6,30 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Cnap.Attendance.Infrastructure.Services;
 
-public class PresenceService(AppDbContext db)
+public class PresenceService(AppDbContext db, TimeProvider horloge)
 {
+    /// <summary>Exclut la présence des statistiques (réversible). L'auteur et la date sont enregistrés.</summary>
+    public async Task InvaliderAsync(Guid id, string? motif, string auteur, CancellationToken ct)
+    {
+        var presence = await db.Presences.FirstOrDefaultAsync(p => p.Id == id, ct) ?? throw new IntrouvableException("Présence introuvable.");
+        presence.EstInvalidee = true;
+        presence.MotifInvalidation = string.IsNullOrWhiteSpace(motif) ? null : motif.Trim();
+        presence.InvalideePar = auteur;
+        presence.InvalideeLe = horloge.GetUtcNow();
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>Rétablit une présence invalidée.</summary>
+    public async Task RetablirAsync(Guid id, CancellationToken ct)
+    {
+        var presence = await db.Presences.FirstOrDefaultAsync(p => p.Id == id, ct) ?? throw new IntrouvableException("Présence introuvable.");
+        presence.EstInvalidee = false;
+        presence.MotifInvalidation = null;
+        presence.InvalideePar = null;
+        presence.InvalideeLe = null;
+        await db.SaveChangesAsync(ct);
+    }
+
     public Task<List<PresenceListeDto>> ListerToutAsync(PresenceFiltre filtre, CancellationToken ct) =>
         Projeter(Filtrer(filtre)).ToListAsync(ct);
 
@@ -42,16 +64,21 @@ public class PresenceService(AppDbContext db)
                 p.QrCodeNavigation.Club != null ? p.QrCodeNavigation.Club.Nom : null,
                 p.QrCodeNavigation.Club != null ? p.QrCodeNavigation.Club.Type : null,
                 p.SessionId, p.Session.Designation, p.Session.Seminaire.Designation, p.HeureDePointage,
-                p.ResultatPosition, p.DistanceMetres));
+                p.ResultatPosition, p.DistanceMetres, p.EstInvalidee, p.MotifInvalidation, p.InvalideePar, p.InvalideeLe));
 }
 
 public class RapportService(AppDbContext db)
 {
-    /// <summary>Nombre de QR Codes activés (participants distincts) par séminaire d'inscription.</summary>
+    /// <summary>Participants par séminaire : QR Codes ayant au moins une présence valide dans une session du séminaire.</summary>
     public async Task<List<RapportLigneDto>> InscritsParSeminaireAsync(CancellationToken ct)
     {
         var lignes = await db.Seminaires.AsNoTracking()
-            .Select(s => new { s.Id, s.Designation, Nombre = db.QrCodes.Count(q => q.SeminaireId == s.Id) })
+            .Select(s => new
+            {
+                s.Id,
+                s.Designation,
+                Nombre = db.QrCodes.Count(q => q.Presences.Any(p => !p.EstInvalidee && p.Session.SeminaireId == s.Id))
+            })
             .ToListAsync(ct);
         return Trier(lignes.Select(l => new RapportLigneDto(l.Id.ToString(), l.Designation, l.Nombre)));
     }
@@ -61,7 +88,7 @@ public class RapportService(AppDbContext db)
         db.Sessions.AsNoTracking()
             .Where(s => seminaireId == null || s.SeminaireId == seminaireId)
             .OrderBy(s => s.HeureDebut)
-            .Select(s => new RapportLigneDto(s.Id.ToString(), s.Seminaire.Designation + " – " + s.Designation, s.Presences.Count))
+            .Select(s => new RapportLigneDto(s.Id.ToString(), s.Seminaire.Designation + " – " + s.Designation, s.Presences.Count(p => !p.EstInvalidee)))
             .ToListAsync(ct);
 
     /// <summary>
@@ -71,7 +98,7 @@ public class RapportService(AppDbContext db)
     public async Task<List<PresentClubDto>> PresentsParClubAsync(Guid seminaireId, CancellationToken ct)
     {
         var pointages = await db.Presences.AsNoTracking()
-            .Where(p => p.Session.SeminaireId == seminaireId)
+            .Where(p => p.Session.SeminaireId == seminaireId && !p.EstInvalidee)
             .Select(p => new
             {
                 p.QrCode,
@@ -105,8 +132,8 @@ public class RapportService(AppDbContext db)
     {
         var comptes = await db.Presences.AsNoTracking()
             .Where(p => seminaireId == null || p.Session.SeminaireId == seminaireId)
-            .GroupBy(p => new { p.SessionId, p.ResultatPosition })
-            .Select(g => new { g.Key.SessionId, g.Key.ResultatPosition, Nombre = g.Count() })
+            .GroupBy(p => new { p.SessionId, p.ResultatPosition, p.EstInvalidee })
+            .Select(g => new { g.Key.SessionId, g.Key.ResultatPosition, g.Key.EstInvalidee, Nombre = g.Count() })
             .ToListAsync(ct);
 
         var sessions = await db.Sessions.AsNoTracking()
@@ -117,18 +144,21 @@ public class RapportService(AppDbContext db)
 
         return sessions.Select(s =>
         {
-            int Nombre(ResultatPosition r) => comptes.Where(c => c.SessionId == s.Id && c.ResultatPosition == r).Sum(c => c.Nombre);
+            int Nombre(ResultatPosition r) =>
+                comptes.Where(c => c.SessionId == s.Id && !c.EstInvalidee && c.ResultatPosition == r).Sum(c => c.Nombre);
             return new RapportLieuDto(s.Id.ToString(), s.Libelle,
                 Nombre(ResultatPosition.SurPlace), Nombre(ResultatPosition.HorsZone),
-                Nombre(ResultatPosition.NonLocalise), Nombre(ResultatPosition.NonControle));
+                Nombre(ResultatPosition.NonLocalise), Nombre(ResultatPosition.NonControle),
+                comptes.Where(c => c.SessionId == s.Id && c.EstInvalidee).Sum(c => c.Nombre));
         }).ToList();
     }
 
-    /// <summary>Nombre de participants distincts par type de club (tous les types, même sans inscrit).</summary>
+    /// <summary>Participants (au moins une présence valide) par type de club ; tous les types, même sans participant.</summary>
     public async Task<List<RapportLigneDto>> InscritsParTypeClubAsync(Guid? seminaireId, CancellationToken ct)
     {
         var comptes = await db.QrCodes.AsNoTracking()
-            .Where(q => q.Club != null && (seminaireId == null || q.SeminaireId == seminaireId))
+            .Where(q => q.Club != null
+                && q.Presences.Any(p => !p.EstInvalidee && (seminaireId == null || p.Session.SeminaireId == seminaireId)))
             .GroupBy(q => q.Club!.Type)
             .Select(g => new { Type = g.Key, Nombre = g.Count() })
             .ToListAsync(ct);
@@ -137,7 +167,7 @@ public class RapportService(AppDbContext db)
             .ToList();
     }
 
-    /// <summary>Nombre de participants distincts par club (clubs sans inscrit exclus).</summary>
+    /// <summary>Participants (au moins une présence valide) par club ; clubs sans participant exclus.</summary>
     public async Task<List<RapportLigneDto>> InscritsParClubAsync(Guid? seminaireId, CancellationToken ct)
     {
         var lignes = await db.Clubs.AsNoTracking()
@@ -145,7 +175,8 @@ public class RapportService(AppDbContext db)
             {
                 c.Code,
                 c.Nom,
-                Nombre = db.QrCodes.Count(q => q.ClubCode == c.Code && (seminaireId == null || q.SeminaireId == seminaireId))
+                Nombre = db.QrCodes.Count(q => q.ClubCode == c.Code
+                    && q.Presences.Any(p => !p.EstInvalidee && (seminaireId == null || p.Session.SeminaireId == seminaireId)))
             })
             .Where(l => l.Nombre > 0)
             .ToListAsync(ct);

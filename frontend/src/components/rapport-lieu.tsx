@@ -20,6 +20,10 @@ export function totauxLieu(lignes: RapportLieu[] | null): TotauxLieu {
   return t;
 }
 
+export function totalInvalidees(lignes: RapportLieu[] | null) {
+  return (lignes ?? []).reduce((s, l) => s + l.invalidees, 0);
+}
+
 export const pourcentage = (n: number, total: number) =>
   total === 0 ? "—" : `${((n / total) * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`;
 
@@ -34,6 +38,7 @@ const INDICATEURS: { cle: ResultatPosition; Icone: typeof MapPin; classe: string
 export function RapportLieuCarte({ lignes, erreur, filtre }: { lignes: RapportLieu[] | null; erreur: string | null; filtre?: string }) {
   const t = totauxLieu(lignes);
   const aucunControle = lignes !== null && t.total > 0 && t.NonControle === t.total;
+  const invalidees = totalInvalidees(lignes);
 
   return (
     <Carte titre={`Contrôle du lieu · ${t.total} présence${t.total > 1 ? "s" : ""}`}>
@@ -53,6 +58,12 @@ export function RapportLieuCarte({ lignes, erreur, filtre }: { lignes: RapportLi
           </div>
         ))}
       </div>
+      {invalidees > 0 && (
+        <p className="mt-3 text-sm text-gris">
+          {invalidees} présence{invalidees > 1 ? "s" : ""} invalidée{invalidees > 1 ? "s" : ""} (Suivi des présences), exclue
+          {invalidees > 1 ? "s" : ""} de ces chiffres.
+        </p>
+      )}
       {aucunControle && (
         <p className="mt-3 text-sm text-gris">
           Le contrôle du lieu n&apos;est activé sur aucun séminaire concerné : activez-le dans Séminaires &gt; Modifier &gt; « Lieu de la formation ».
@@ -92,6 +103,7 @@ export function RapportLieuCarte({ lignes, erreur, filtre }: { lignes: RapportLi
                   filtre: false,
                   classe: "font-semibold",
                 },
+                { cle: "invalidees", titre: "Invalidées", valeur: (l) => l.invalidees, type: "nombre", filtre: false, classe: "text-gris" },
               ]}
             />
           </div>
