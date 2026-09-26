@@ -66,7 +66,7 @@ public class RapportService(AppDbContext db)
 
     /// <summary>
     /// Présents d'un séminaire (au moins une session pointée), triés par club puis par nom,
-    /// avec les sessions suivies dans l'ordre chronologique.
+    /// avec le nombre de sessions suivies et les dates de première et dernière validation.
     /// </summary>
     public async Task<List<PresentClubDto>> PresentsParClubAsync(Guid seminaireId, CancellationToken ct)
     {
@@ -76,12 +76,10 @@ public class RapportService(AppDbContext db)
             {
                 p.QrCode,
                 p.QrCodeNavigation.NomComplet,
-                p.QrCodeNavigation.Email,
                 p.QrCodeNavigation.ClubCode,
                 Club = p.QrCodeNavigation.Club != null ? p.QrCodeNavigation.Club.Nom : null,
                 Type = p.QrCodeNavigation.Club != null ? (TypeClub?)p.QrCodeNavigation.Club.Type : null,
-                Session = p.Session.Designation,
-                p.Session.HeureDebut,
+                p.SessionId,
                 p.HeureDePointage
             })
             .ToListAsync(ct);
@@ -91,9 +89,10 @@ public class RapportService(AppDbContext db)
             .Select(g =>
             {
                 var p = g.First();
-                return new PresentClubDto(g.Key, p.NomComplet, p.Email, p.ClubCode, p.Club, p.Type,
-                    g.OrderBy(x => x.HeureDebut).Select(x => x.Session).Distinct().ToList(),
-                    g.Min(x => x.HeureDePointage));
+                return new PresentClubDto(g.Key, p.NomComplet, p.ClubCode, p.Club, p.Type,
+                    g.Select(x => x.SessionId).Distinct().Count(),
+                    g.Min(x => x.HeureDePointage),
+                    g.Max(x => x.HeureDePointage));
             })
             .OrderBy(p => p.Club is null) // participants sans club en dernier
             .ThenBy(p => p.Club, StringComparer.CurrentCultureIgnoreCase)

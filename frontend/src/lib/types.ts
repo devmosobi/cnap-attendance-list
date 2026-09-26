@@ -91,12 +91,12 @@ export type RapportLigne = { cle: string; libelle: string; valeur: number };
 export type PresentClub = {
   qrCode: string;
   nomComplet: string | null;
-  email: string | null;
   clubCode: string | null;
   club: string | null;
   typeClub: TypeClub | null;
-  sessions: string[];
-  premierePresence: string;
+  nombreSessions: number;
+  premiereValidation: string;
+  derniereValidation: string;
 };
 export type RapportLieu = { cle: string; session: string; surPlace: number; horsZone: number; nonLocalise: number; nonControle: number };
 export type ParametresSmtp = {

@@ -70,27 +70,36 @@ export function exporterCsv(doc: DocumentExport) {
 
 // ---------------------------------------------------------------- Excel
 
-export async function exporterXlsx(doc: DocumentExport) {
-  const { default: writeXlsxFile } = await import("write-excel-file/browser");
-  const entete = doc.colonnes.map((c) => ({ value: c.titre, fontWeight: "bold" as const }));
-  const corps = doc.lignes.map((ligne) =>
+/** Onglet supplémentaire d'un classeur Excel. */
+export type FeuilleExport = { titre: string; colonnes: ColonneExport[]; lignes: ValeurCellule[][] };
+
+function construireFeuille({ titre, colonnes, lignes }: FeuilleExport) {
+  const entete = colonnes.map((c) => ({ value: c.titre, fontWeight: "bold" as const }));
+  const corps = lignes.map((ligne) =>
     ligne.map((v, i) => {
       if (v === null || v === undefined || v === "") return null;
-      const type = doc.colonnes[i]?.type;
+      const type = colonnes[i]?.type;
       if (type === "nombre" && typeof v === "number") return { value: v, type: Number };
       if (type === "date" && v instanceof Date) return { value: v, type: Date, format: "dd/mm/yyyy hh:mm" };
       return { value: texteCellule(v), type: String };
     }),
   );
-  const largeurs = doc.colonnes.map((c, i) =>
-    Math.min(60, Math.max(c.titre.length, ...doc.lignes.slice(0, 500).map((l) => texteCellule(l[i]).length)) + 2),
+  const largeurs = colonnes.map((c, i) =>
+    Math.min(60, Math.max(c.titre.length, ...lignes.slice(0, 500).map((l) => texteCellule(l[i]).length)) + 2),
   );
-  const feuille = doc.titre.replace(/[\[\]:*?/\\]/g, " ").slice(0, 31);
-  const blob = await writeXlsxFile([entete, ...corps], {
-    sheet: feuille,
+  return {
+    data: [entete, ...corps],
+    sheet: titre.replace(/[\[\]:*?/\\]/g, " ").slice(0, 31),
     columns: largeurs.map((width) => ({ width })),
     stickyRowsCount: 1,
-  }).toBlob();
+  };
+}
+
+/** Classeur Excel : le document en premier onglet, puis les onglets supplémentaires éventuels. */
+export async function exporterXlsx(doc: DocumentExport, autresFeuilles: FeuilleExport[] = []) {
+  const { default: writeXlsxFile } = await import("write-excel-file/browser");
+  const feuilles = [doc, ...autresFeuilles].map(construireFeuille);
+  const blob = await writeXlsxFile(feuilles).toBlob();
   telechargerBlob(blob, `${doc.nomFichier}-${horodatage()}.xlsx`);
 }
 

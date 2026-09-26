@@ -114,12 +114,12 @@ public record RapportLigneDto(string Cle, string Libelle, int Valeur);
 public record PresentClubDto(
     string QrCode,
     string? NomComplet,
-    string? Email,
     string? ClubCode,
     string? Club,
     TypeClub? TypeClub,
-    IReadOnlyList<string> Sessions,
-    DateTimeOffset PremierePresence);
+    int NombreSessions,
+    DateTimeOffset PremiereValidation,
+    DateTimeOffset DerniereValidation);
 
 /// <summary>Répartition des présences d'une session selon le contrôle du lieu.</summary>
 public record RapportLieuDto(string Cle, string Session, int SurPlace, int HorsZone, int NonLocalise, int NonControle);

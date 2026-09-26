@@ -4,14 +4,17 @@ import { ChevronsDownUp, ChevronsUpDown, FileSpreadsheet, FileText, RefreshCw, S
 import { useEffect, useMemo, useState } from "react";
 import { Alerte, Bouton, Carte, Chargement, EnTete } from "@/components/ui";
 import { construireQuery } from "@/lib/api";
-import { LIBELLES_TYPE_CLUB, TYPES_CLUB, libelleTypeClub } from "@/lib/clubs";
-import { exporterCsv, exporterPdfSections, exporterXlsx, type ColonneExport, type DocumentExport, type SectionPdf } from "@/lib/export";
+import { LIBELLES_TYPE_CLUB, TYPES_CLUB } from "@/lib/clubs";
+import { exporterCsv, exporterPdfSections, exporterXlsx, type ColonneExport, type DocumentExport, type FeuilleExport, type SectionPdf } from "@/lib/export";
 import { dateHeure } from "@/lib/format";
 import { useDonnees } from "@/lib/hooks";
 import type { PresentClub, Seminaire, TypeClub } from "@/lib/types";
 
 const SANS_CLUB = "Sans club";
 const normaliser = (v: string) => v.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+const comparateur = new Intl.Collator("fr", { sensitivity: "base" });
+const part = (n: number, total: number) => (total === 0 ? 0 : (n / total) * 100);
+const formatPart = (p: number) => `${p.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`;
 
 type Groupe = { cle: string; club: string; type: TypeClub | null; presents: PresentClub[] };
 
@@ -37,9 +40,7 @@ export default function PagePresentsParClub() {
   const groupes = useMemo<Groupe[]>(() => {
     const r = normaliser(recherche);
     const filtres = (presents.donnees ?? []).filter(
-      (p) =>
-        (!type || p.typeClub === type) &&
-        (!r || [p.nomComplet, p.email, p.club].some((v) => v && normaliser(v).includes(r))),
+      (p) => (!type || p.typeClub === type) && (!r || [p.nomComplet, p.club].some((v) => v && normaliser(v).includes(r))),
     );
     const parClub = new Map<string, Groupe>();
     for (const p of filtres) {
@@ -50,7 +51,14 @@ export default function PagePresentsParClub() {
     return [...parClub.values()]; // l'API renvoie déjà les présents triés par club puis par nom
   }, [presents.donnees, recherche, type]);
 
+  // Synthèse : clubs classés par nombre de présents (l'engouement), puis par nom.
+  const synthese = useMemo(
+    () => [...groupes].sort((a, b) => b.presents.length - a.presents.length || comparateur.compare(a.club, b.club)),
+    [groupes],
+  );
+
   const nbPresents = groupes.reduce((s, g) => s + g.presents.length, 0);
+  const maxPresents = synthese[0]?.presents.length ?? 0;
   const resumeFiltres = [recherche && `recherche « ${recherche} »`, type && `type ${LIBELLES_TYPE_CLUB[type]}`].filter(Boolean).join(", ");
   const sousTitre = `Séminaire : ${nomSeminaire} · ${nbPresents} présent${nbPresents > 1 ? "s" : ""} · ${groupes.length} club${groupes.length > 1 ? "s" : ""}${
     resumeFiltres ? ` · Filtres : ${resumeFiltres}` : ""
@@ -69,44 +77,48 @@ export default function PagePresentsParClub() {
     setExportEnCours(format);
     try {
       const nomFichier = "presents-par-club";
+      const colonnesSynthese: ColonneExport[] = [{ titre: "Club" }, { titre: "Présents", type: "nombre" }, { titre: "Part" }];
+      const lignesSynthese = synthese.map((g) => [g.club, g.presents.length, formatPart(part(g.presents.length, nbPresents))]);
+
       if (format === "pdf") {
-        const colonnes: ColonneExport[] = [{ titre: "Nom complet" }, { titre: "Email" }, { titre: "Sessions suivies" }, { titre: "Première présence" }];
-        const sections: SectionPdf[] = groupes.map((g) => ({
-          titre: `${g.club}${g.type ? ` (${LIBELLES_TYPE_CLUB[g.type]})` : ""} · ${g.presents.length} présent${g.presents.length > 1 ? "s" : ""}`,
-          colonnes,
-          lignes: g.presents.map((p) => [p.nomComplet, p.email, p.sessions.join(", "), new Date(p.premierePresence)]),
-        }));
-        await exporterPdfSections({ titre: "Présents par club", sousTitre, nomFichier, sections, paysage: true });
-      } else {
-        const document: DocumentExport = {
-          titre: "Présents par club",
-          sousTitre,
-          nomFichier,
-          colonnes: [
-            { titre: "Club" },
-            { titre: "Type de club" },
-            { titre: "Nom complet" },
-            { titre: "Email" },
-            { titre: "Nombre de sessions", type: "nombre" },
-            { titre: "Sessions suivies" },
-            { titre: "Première présence", type: "date" },
-            { titre: "QR Code" },
-          ],
-          lignes: groupes.flatMap((g) =>
-            g.presents.map((p) => [
-              g.club,
-              libelleTypeClub(p.typeClub),
-              p.nomComplet,
-              p.email,
-              p.sessions.length,
-              p.sessions.join(", "),
-              new Date(p.premierePresence),
-              p.qrCode,
-            ]),
-          ),
-        };
-        if (format === "csv") exporterCsv(document);
-        else await exporterXlsx(document);
+        const colonnes: ColonneExport[] = [
+          { titre: "Nom complet" },
+          { titre: "Sessions suivies", type: "nombre" },
+          { titre: "1re validation" },
+          { titre: "Dernière validation" },
+        ];
+        const sections: SectionPdf[] = [
+          { titre: "Synthèse par club", colonnes: colonnesSynthese, lignes: lignesSynthese },
+          ...groupes.map((g) => ({
+            titre: `${g.club} · ${g.presents.length} présent${g.presents.length > 1 ? "s" : ""}`,
+            colonnes,
+            lignes: g.presents.map((p) => [p.nomComplet, p.nombreSessions, new Date(p.premiereValidation), new Date(p.derniereValidation)]),
+          })),
+        ];
+        await exporterPdfSections({ titre: "Présents par club", sousTitre, nomFichier, sections });
+        return;
+      }
+
+      const document: DocumentExport = {
+        titre: "Présents",
+        sousTitre,
+        nomFichier,
+        colonnes: [
+          { titre: "Séminaire" },
+          { titre: "Club" },
+          { titre: "Nom complet" },
+          { titre: "Sessions suivies", type: "nombre" },
+          { titre: "1re validation", type: "date" },
+          { titre: "Dernière validation", type: "date" },
+        ],
+        lignes: groupes.flatMap((g) =>
+          g.presents.map((p) => [nomSeminaire, g.club, p.nomComplet, p.nombreSessions, new Date(p.premiereValidation), new Date(p.derniereValidation)]),
+        ),
+      };
+      if (format === "csv") exporterCsv(document);
+      else {
+        const feuilleSynthese: FeuilleExport = { titre: "Synthèse par club", colonnes: colonnesSynthese, lignes: lignesSynthese };
+        await exporterXlsx(document, [feuilleSynthese]);
       }
     } catch {
       setErreurExport("L'export a échoué. Veuillez réessayer.");
@@ -119,7 +131,7 @@ export default function PagePresentsParClub() {
     <>
       <EnTete
         titre="Présents par club"
-        description="Participants ayant pointé au moins une session du séminaire, regroupés par club."
+        description="Nombre de participants ayant pointé au moins une session du séminaire, par club."
         actions={
           <select className="champ w-auto" value={seminaireId} onChange={(e) => setSeminaireId(e.target.value)} aria-label="Séminaire">
             {seminaires.donnees?.map((s) => (
@@ -137,7 +149,7 @@ export default function PagePresentsParClub() {
           <div className="flex flex-wrap items-center gap-2">
             <input
               className="champ w-64 max-w-full py-2 text-sm"
-              placeholder="Rechercher un nom, un email, un club…"
+              placeholder="Rechercher un nom ou un club…"
               value={recherche}
               onChange={(e) => setRecherche(e.target.value)}
               aria-label="Rechercher"
@@ -154,15 +166,6 @@ export default function PagePresentsParClub() {
           <div className="flex flex-wrap items-center gap-2">
             <Bouton variante="secondaire" taille="petit" onClick={presents.recharger}>
               <RefreshCw size={15} aria-hidden /> Actualiser
-            </Bouton>
-            <Bouton
-              variante="secondaire"
-              taille="petit"
-              onClick={() => setReplies(replies.size ? new Set() : new Set(groupes.map((g) => g.cle)))}
-              disabled={groupes.length === 0}
-            >
-              {replies.size ? <ChevronsUpDown size={15} aria-hidden /> : <ChevronsDownUp size={15} aria-hidden />}
-              {replies.size ? "Tout déplier" : "Tout replier"}
             </Bouton>
             <Bouton variante="secondaire" taille="petit" disabled={!!exportEnCours || nbPresents === 0} onClick={() => exporter("csv")}>
               <FileText size={15} aria-hidden /> CSV
@@ -194,6 +197,48 @@ export default function PagePresentsParClub() {
         </Carte>
       )}
 
+      {synthese.length > 0 && (
+        <Carte titre="Synthèse par club" className="mb-5">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-left text-sm">
+              <thead className="bg-surface-2 text-xs tracking-wide text-gris uppercase">
+                <tr>
+                  <th className="w-10 px-3 py-2 font-semibold">#</th>
+                  <th className="px-3 py-2 font-semibold">Club</th>
+                  <th className="w-20 px-3 py-2 text-right font-semibold">Présents</th>
+                  <th className="w-20 px-3 py-2 text-right font-semibold">Part</th>
+                  <th className="w-2/5 px-3 py-2">
+                    <span className="sr-only">Répartition</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-bordure-douce">
+                {synthese.map((g, i) => (
+                  <tr key={g.cle}>
+                    <td className="px-3 py-2 text-gris tabular-nums">{i + 1}</td>
+                    <td className="px-3 py-2 font-semibold">{g.club}</td>
+                    <td className="px-3 py-2 text-right font-bold tabular-nums">{g.presents.length}</td>
+                    <td className="px-3 py-2 text-right text-gris tabular-nums">{formatPart(part(g.presents.length, nbPresents))}</td>
+                    <td className="px-3 py-2" aria-hidden>
+                      <div className="h-3 rounded-r bg-rotary dark:bg-[#6b9cf0]" style={{ width: `${part(g.presents.length, maxPresents)}%` }} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Carte>
+      )}
+
+      {groupes.length > 0 && (
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-bold">Détail par club</h2>
+          <Bouton variante="lien" onClick={() => setReplies(replies.size ? new Set() : new Set(groupes.map((g) => g.cle)))}>
+            {replies.size ? <ChevronsUpDown size={15} aria-hidden /> : <ChevronsDownUp size={15} aria-hidden />}
+            {replies.size ? "Tout déplier" : "Tout replier"}
+          </Bouton>
+        </div>
+      )}
       <div className="flex flex-col gap-4">
         {groupes.map((g) => {
           const ouvert = !replies.has(g.cle);
@@ -205,24 +250,21 @@ export default function PagePresentsParClub() {
                 aria-expanded={ouvert}
                 className="flex w-full flex-wrap items-center justify-between gap-2 px-4 py-3 text-left hover:bg-surface-2"
               >
-                <span className="font-bold">
-                  {g.club}
-                  {g.type && <span className="ml-2 text-xs font-semibold text-gris">{LIBELLES_TYPE_CLUB[g.type]}</span>}
-                </span>
+                <span className="font-bold">{g.club}</span>
                 <span className="rounded-full bg-rotary-clair px-2.5 py-0.5 text-sm font-semibold text-lien tabular-nums">
                   {g.presents.length} présent{g.presents.length > 1 ? "s" : ""}
                 </span>
               </button>
               {ouvert && (
                 <div className="overflow-x-auto border-t border-bordure-douce">
-                  <table className="w-full min-w-[640px] text-left text-sm">
+                  <table className="w-full min-w-[560px] text-left text-sm">
                     <thead className="bg-surface-2 text-xs tracking-wide text-gris uppercase">
                       <tr>
                         <th className="w-10 px-3 py-2 font-semibold">#</th>
                         <th className="px-3 py-2 font-semibold">Nom complet</th>
-                        <th className="px-3 py-2 font-semibold">Email</th>
-                        <th className="px-3 py-2 font-semibold">Sessions suivies</th>
-                        <th className="px-3 py-2 font-semibold whitespace-nowrap">Première présence</th>
+                        <th className="px-3 py-2 text-right font-semibold whitespace-nowrap">Sessions suivies</th>
+                        <th className="px-3 py-2 font-semibold whitespace-nowrap">1re validation</th>
+                        <th className="px-3 py-2 font-semibold whitespace-nowrap">Dernière validation</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-bordure-douce">
@@ -230,12 +272,9 @@ export default function PagePresentsParClub() {
                         <tr key={p.qrCode}>
                           <td className="px-3 py-2 text-gris tabular-nums">{i + 1}</td>
                           <td className="px-3 py-2 font-semibold">{p.nomComplet}</td>
-                          <td className="px-3 py-2">{p.email}</td>
-                          <td className="px-3 py-2">
-                            <span className="font-semibold tabular-nums">{p.sessions.length}</span>
-                            <span className="text-gris"> · {p.sessions.join(", ")}</span>
-                          </td>
-                          <td className="px-3 py-2 whitespace-nowrap tabular-nums">{dateHeure(p.premierePresence)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{p.nombreSessions}</td>
+                          <td className="px-3 py-2 whitespace-nowrap tabular-nums">{dateHeure(p.premiereValidation)}</td>
+                          <td className="px-3 py-2 whitespace-nowrap tabular-nums">{dateHeure(p.derniereValidation)}</td>
                         </tr>
                       ))}
                     </tbody>
