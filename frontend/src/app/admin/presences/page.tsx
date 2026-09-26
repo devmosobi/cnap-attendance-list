@@ -5,6 +5,7 @@ import { BadgeLieu } from "@/components/badge-lieu";
 import { TableDonnees } from "@/components/table-donnees";
 import { ActionIcone, Bouton, Carte, EnTete } from "@/components/ui";
 import { dateHeure } from "@/lib/format";
+import { libelleTypeClub } from "@/lib/clubs";
 import { useDonnees } from "@/lib/hooks";
 import { LIBELLES_RESULTAT } from "@/lib/lieu";
 import type { PresenceListe } from "@/lib/types";
@@ -33,6 +34,7 @@ export default function PagePresences() {
             { cle: "nom", titre: "Nom complet", valeur: (p) => p.nomComplet ?? "", classe: "font-semibold" },
             { cle: "email", titre: "Email", valeur: (p) => p.email ?? "" },
             { cle: "club", titre: "Club", valeur: (p) => p.club ?? "", filtre: "liste" },
+            { cle: "typeClub", titre: "Type de club", valeur: (p) => libelleTypeClub(p.typeClub), filtre: "liste" },
             { cle: "seminaire", titre: "Séminaire", valeur: (p) => p.seminaire, filtre: "liste" },
             { cle: "session", titre: "Session", valeur: (p) => p.session, filtre: "liste" },
             {

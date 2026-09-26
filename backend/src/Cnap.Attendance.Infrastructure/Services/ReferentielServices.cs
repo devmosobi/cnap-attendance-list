@@ -179,7 +179,7 @@ public partial class ClubService(AppDbContext db)
     public Task<List<ClubDto>> ListerAsync(CancellationToken ct) =>
         db.Clubs.AsNoTracking()
             .OrderBy(c => c.Nom)
-            .Select(c => new ClubDto(c.Code, c.Nom, c.EstActif, db.QrCodes.Count(q => q.ClubCode == c.Code)))
+            .Select(c => new ClubDto(c.Code, c.Nom, c.Type, c.EstActif, db.QrCodes.Count(q => q.ClubCode == c.Code)))
             .ToListAsync(ct);
 
     public async Task<ClubDto> CreerAsync(ClubCreationRequest requete, CancellationToken ct)
@@ -190,9 +190,9 @@ public partial class ClubService(AppDbContext db)
             throw new ConflitException($"Un club avec le code {code} existe déjà.");
         if (await db.Clubs.AnyAsync(c => c.Nom == nom, ct))
             throw new ConflitException($"Un club nommé « {nom} » existe déjà.");
-        db.Clubs.Add(new Club { Code = code, Nom = nom, EstActif = requete.EstActif });
+        db.Clubs.Add(new Club { Code = code, Nom = nom, Type = requete.Type, EstActif = requete.EstActif });
         await db.SaveChangesAsync(ct);
-        return new ClubDto(code, nom, requete.EstActif, 0);
+        return new ClubDto(code, nom, requete.Type, requete.EstActif, 0);
     }
 
     public async Task<ClubDto> ModifierAsync(string code, ClubModificationRequest requete, CancellationToken ct)
@@ -202,9 +202,10 @@ public partial class ClubService(AppDbContext db)
         if (await db.Clubs.AnyAsync(c => c.Nom == nom && c.Code != club.Code, ct))
             throw new ConflitException($"Un club nommé « {nom} » existe déjà.");
         club.Nom = nom;
+        club.Type = requete.Type;
         club.EstActif = requete.EstActif;
         await db.SaveChangesAsync(ct);
-        return new ClubDto(club.Code, club.Nom, club.EstActif, await db.QrCodes.CountAsync(q => q.ClubCode == club.Code, ct));
+        return new ClubDto(club.Code, club.Nom, club.Type, club.EstActif, await db.QrCodes.CountAsync(q => q.ClubCode == club.Code, ct));
     }
 
     public async Task ActiverAsync(string code, bool estActif, CancellationToken ct)
@@ -223,7 +224,10 @@ public partial class ClubService(AppDbContext db)
         await db.SaveChangesAsync(ct);
     }
 
-    /// <summary>Import CSV/Excel (colonnes Code et Nom) : crée les clubs absents, ignore les existants.</summary>
+    /// <summary>
+    /// Import CSV/Excel (colonnes Code, Nom et Type facultative) : crée les clubs absents ;
+    /// pour un club existant (même code), seul le type est mis à jour si la colonne Type est présente.
+    /// </summary>
     public async Task<ImportResultatDto> ImporterAsync(Stream fichier, string nomFichier, CancellationToken ct)
     {
         var lecture = await TableauLecteur.LireAsync(fichier, nomFichier, ct);
@@ -231,12 +235,12 @@ public partial class ClubService(AppDbContext db)
         var colNom = lecture.IndexColonne("Nom", "Nom club", "Nom du club", "Club", "Libellé", "Désignation");
         if (colCode < 0 || colNom < 0)
             throw new RegleMetierException("Colonnes « Code » et « Nom » requises dans le fichier (première ligne = en-têtes).");
+        var colType = lecture.IndexColonne("Type", "Type de club", "Type club", "Catégorie");
 
-        var existants = await db.Clubs.AsNoTracking().ToListAsync(ct);
-        var codes = existants.Select(c => c.Code).ToHashSet();
-        var noms = existants.Select(c => c.Nom).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var existants = await db.Clubs.ToDictionaryAsync(c => c.Code, ct);
+        var noms = existants.Values.Select(c => c.Nom).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var erreurs = new List<string>();
-        int crees = 0, ignores = 0;
+        int crees = 0, ignores = 0, misAJour = 0;
 
         foreach (var (numero, cellules) in lecture.Lignes)
         {
@@ -253,19 +257,37 @@ public partial class ClubService(AppDbContext db)
                 erreurs.Add($"Ligne {numero} : code « {code} » invalide (lettres, chiffres, - ou _ uniquement).");
                 continue;
             }
-            if (codes.Contains(code) || noms.Contains(nom))
+            var brutType = colType >= 0 && colType < cellules.Count ? cellules[colType] : null;
+            var type = TypesClub.Lire(brutType);
+            if (type is null)
+            {
+                erreurs.Add($"Ligne {numero} : type « {brutType?.Trim()} » inconnu (Rotary Club, Rotaract Club, Interact Club ou Autres).");
+                continue;
+            }
+            if (existants.TryGetValue(code, out var existant))
+            {
+                if (colType >= 0 && existant.Type != type)
+                {
+                    existant.Type = type.Value;
+                    misAJour++;
+                }
+                else ignores++;
+                continue;
+            }
+            if (noms.Contains(nom))
             {
                 ignores++;
                 continue;
             }
-            db.Clubs.Add(new Club { Code = code, Nom = nom, EstActif = true });
-            codes.Add(code);
+            var club = new Club { Code = code, Nom = nom, Type = type.Value, EstActif = true };
+            db.Clubs.Add(club);
+            existants[code] = club;
             noms.Add(nom);
             crees++;
         }
 
         await db.SaveChangesAsync(ct);
-        return new ImportResultatDto(lecture.Lignes.Count, crees, ignores, erreurs);
+        return new ImportResultatDto(lecture.Lignes.Count, crees, ignores, erreurs, misAJour);
     }
 
     private async Task<Club> Charger(string code, CancellationToken ct)

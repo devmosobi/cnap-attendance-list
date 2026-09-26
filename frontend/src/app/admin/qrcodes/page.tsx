@@ -6,6 +6,7 @@ import { ImportFichier } from "@/components/import-fichier";
 import { TableDonnees } from "@/components/table-donnees";
 import { ActionIcone, Badge, Bouton, Carte, EnTete } from "@/components/ui";
 import { dateHeure } from "@/lib/format";
+import { libelleTypeClub } from "@/lib/clubs";
 import { useDonnees, useEstAdministrateur } from "@/lib/hooks";
 import type { QrCodeListe } from "@/lib/types";
 
@@ -58,6 +59,7 @@ export default function PageQrCodes() {
             { cle: "nom", titre: "Nom complet", valeur: (q) => q.nomComplet ?? "", classe: "font-semibold" },
             { cle: "email", titre: "Email", valeur: (q) => q.email ?? "" },
             { cle: "club", titre: "Club", valeur: (q) => q.club ?? "", filtre: "liste" },
+            { cle: "typeClub", titre: "Type de club", valeur: (q) => libelleTypeClub(q.typeClub), filtre: "liste" },
             { cle: "seminaire", titre: "Séminaire", valeur: (q) => q.seminaire ?? "", filtre: "liste" },
             {
               cle: "activation",

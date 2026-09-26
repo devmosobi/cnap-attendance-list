@@ -48,11 +48,13 @@ public class ClubConfiguration : IEntityTypeConfiguration<Club>
 {
     public void Configure(EntityTypeBuilder<Club> b)
     {
-        b.ToTable("clubs");
+        b.ToTable("clubs", t => t.HasCheckConstraint("ck_clubs_type", "type IN ('Rotary', 'Rotaract', 'Interact', 'Autre')"));
         b.HasKey(x => x.Code);
         b.Property(x => x.Code).HasMaxLength(20);
         b.Property(x => x.Nom).HasMaxLength(200).IsRequired();
+        b.Property(x => x.Type).HasConversion<string>().HasMaxLength(20).HasDefaultValue(TypeClub.Autre).ValueGeneratedNever();
         b.Property(x => x.EstActif).HasDefaultValue(true).ValueGeneratedNever();
+        b.HasIndex(x => x.Type);
         b.HasIndex(x => x.Nom).IsUnique();
     }
 }

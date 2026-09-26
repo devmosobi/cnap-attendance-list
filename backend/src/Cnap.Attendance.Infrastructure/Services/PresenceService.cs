@@ -1,3 +1,4 @@
+using Cnap.Attendance.Core.Common;
 using Cnap.Attendance.Core.Dtos;
 using Cnap.Attendance.Core.Entities;
 using Cnap.Attendance.Infrastructure.Data;
@@ -39,6 +40,7 @@ public class PresenceService(AppDbContext db)
             .Select(p => new PresenceListeDto(
                 p.Id, p.QrCode, p.QrCodeNavigation.NomComplet, p.QrCodeNavigation.Email, p.QrCodeNavigation.ClubCode,
                 p.QrCodeNavigation.Club != null ? p.QrCodeNavigation.Club.Nom : null,
+                p.QrCodeNavigation.Club != null ? p.QrCodeNavigation.Club.Type : null,
                 p.SessionId, p.Session.Designation, p.Session.Seminaire.Designation, p.HeureDePointage,
                 p.ResultatPosition, p.DistanceMetres));
 }
@@ -84,6 +86,19 @@ public class RapportService(AppDbContext db)
                 Nombre(ResultatPosition.SurPlace), Nombre(ResultatPosition.HorsZone),
                 Nombre(ResultatPosition.NonLocalise), Nombre(ResultatPosition.NonControle));
         }).ToList();
+    }
+
+    /// <summary>Nombre de participants distincts par type de club (tous les types, même sans inscrit).</summary>
+    public async Task<List<RapportLigneDto>> InscritsParTypeClubAsync(Guid? seminaireId, CancellationToken ct)
+    {
+        var comptes = await db.QrCodes.AsNoTracking()
+            .Where(q => q.Club != null && (seminaireId == null || q.SeminaireId == seminaireId))
+            .GroupBy(q => q.Club!.Type)
+            .Select(g => new { Type = g.Key, Nombre = g.Count() })
+            .ToListAsync(ct);
+        return Enum.GetValues<TypeClub>()
+            .Select(t => new RapportLigneDto(t.ToString(), TypesClub.Libelle(t), comptes.FirstOrDefault(c => c.Type == t)?.Nombre ?? 0))
+            .ToList();
     }
 
     /// <summary>Nombre de participants distincts par club (clubs sans inscrit exclus).</summary>

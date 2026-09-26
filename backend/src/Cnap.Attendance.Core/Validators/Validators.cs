@@ -61,6 +61,7 @@ public class ClubCreationRequestValidator : AbstractValidator<ClubCreationReques
         RuleFor(x => x.Code).NotEmpty().WithMessage("Le code est requis.").MaximumLength(20)
             .Matches("^[A-Za-z0-9_-]+$").WithMessage("Le code ne doit contenir que des lettres, chiffres, - ou _.");
         RuleFor(x => x.Nom).NotEmpty().WithMessage("Le nom est requis.").MaximumLength(200);
+        RuleFor(x => x.Type).IsInEnum().WithMessage("Type de club invalide.");
     }
 }
 
@@ -69,6 +70,7 @@ public class ClubModificationRequestValidator : AbstractValidator<ClubModificati
     public ClubModificationRequestValidator()
     {
         RuleFor(x => x.Nom).NotEmpty().WithMessage("Le nom est requis.").MaximumLength(200);
+        RuleFor(x => x.Type).IsInEnum().WithMessage("Type de club invalide.");
     }
 }
 

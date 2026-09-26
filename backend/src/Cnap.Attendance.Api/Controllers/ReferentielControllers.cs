@@ -114,11 +114,11 @@ public class ClubsController(ClubService service) : ControllerBase
         return await service.ImporterAsync(flux, fichier.FileName, ct);
     }
 
-    /// <summary>Modèle vide (en-têtes Code et Nom) à compléter puis importer.</summary>
+    /// <summary>Modèle vide (en-têtes Code, Nom et Type) à compléter puis importer.</summary>
     [HttpGet("modele")]
     public IActionResult Modele([FromQuery] FormatExport format = FormatExport.Xlsx)
     {
-        var fichier = TableauExport.Generer(Array.Empty<ClubDto>(), [new("Code", c => c.Code), new("Nom", c => c.Nom)], format, "modele-clubs");
+        var fichier = TableauExport.Generer(Array.Empty<ClubDto>(), [new("Code", c => c.Code), new("Nom", c => c.Nom), new("Type", c => c.Type)], format, "modele-clubs");
         return File(fichier.Contenu, fichier.ContentType, fichier.NomFichier);
     }
 }

@@ -18,7 +18,7 @@ public record SeminairePublicDto(Guid Id, string Designation, ControlePosition C
 
 public record SessionPublicDto(Guid Id, string Designation, DateTimeOffset HeureDebut, DateTimeOffset HeureFin);
 
-public record ClubOptionDto(string Code, string Nom);
+public record ClubOptionDto(string Code, string Nom, TypeClub Type);
 
 public record PresencePublicDto(Guid SessionId, string Session, DateTimeOffset HeureDePointage);
 

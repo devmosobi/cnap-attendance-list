@@ -41,11 +41,11 @@ public record SessionDto(
 public record SessionRequest(Guid SeminaireId, string Designation, DateTimeOffset HeureDebut, DateTimeOffset HeureFin, string? Description, bool EstActif);
 
 // Clubs
-public record ClubDto(string Code, string Nom, bool EstActif, int NombreInscrits);
+public record ClubDto(string Code, string Nom, TypeClub Type, bool EstActif, int NombreInscrits);
 
-public record ClubCreationRequest(string Code, string Nom, bool EstActif);
+public record ClubCreationRequest(string Code, string Nom, bool EstActif, TypeClub Type = TypeClub.Autre);
 
-public record ClubModificationRequest(string Nom, bool EstActif);
+public record ClubModificationRequest(string Nom, bool EstActif, TypeClub Type = TypeClub.Autre);
 
 // QR Codes
 public record QrCodeFiltre(string? Statut, Guid? SeminaireId, string? ClubCode, string? Recherche);
@@ -57,6 +57,7 @@ public record QrCodeListeDto(
     string? Email,
     string? ClubCode,
     string? Club,
+    TypeClub? TypeClub,
     Guid? SeminaireId,
     string? Seminaire,
     DateTimeOffset? DateActivation,
@@ -85,7 +86,8 @@ public record PresenceHistoriqueDto(
 
 public record ModifierParticipantRequest(string NomComplet, string Email, string ClubCode);
 
-public record ImportResultatDto(int Lignes, int Crees, int Existants, IReadOnlyList<string> Erreurs);
+/// <summary>MisAJour : éléments existants modifiés par l'import (type d'un club, par exemple).</summary>
+public record ImportResultatDto(int Lignes, int Crees, int Existants, IReadOnlyList<string> Erreurs, int MisAJour = 0);
 
 // Présences
 public record PresenceFiltre(Guid? SessionId, Guid? SeminaireId, string? ClubCode, DateTimeOffset? Du, DateTimeOffset? Au, string? Recherche);
@@ -97,6 +99,7 @@ public record PresenceListeDto(
     string? Email,
     string? ClubCode,
     string? Club,
+    TypeClub? TypeClub,
     Guid SessionId,
     string Session,
     string Seminaire,

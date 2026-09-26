@@ -54,7 +54,8 @@ export function GraphiqueBarres({
             itemStyle={{ color: c.libelle }}
             contentStyle={{ borderRadius: 8, borderColor: c.bordure, backgroundColor: c.fond, fontSize: 13 }}
           />
-          <Bar dataKey="valeur" fill={c.barre} radius={[0, 4, 4, 0]} maxBarSize={22} />
+          {/* Pas d'animation pendant la capture PDF : les barres doivent être à leur taille finale. */}
+          <Bar dataKey="valeur" fill={c.barre} radius={[0, 4, 4, 0]} maxBarSize={22} isAnimationActive={!forcerClair} />
         </BarChart>
       </ResponsiveContainer>
     </div>

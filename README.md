@@ -131,8 +131,9 @@ Les exports sont générés dans le navigateur.
 2. **QR Codes > Importer** : charger le fichier des codes (`docs/codes_seminaire.xlsx`, colonne `Code` ; les autres
    colonnes sont ignorées). Un réimport ne crée pas de doublon. Ce fichier et le PDF des billets sont exclus de git
    (`.gitignore`) : ils permettraient d'activer le billet d'un participant.
-3. **Clubs** : importer la liste des clubs (CSV, `.xlsx` ou `.xls`, colonnes `Code` et `Nom` ; un modèle est
-   téléchargeable depuis la fenêtre d'import) ou les saisir, puis
+3. **Clubs** : importer la liste des clubs (CSV, `.xlsx` ou `.xls`, colonnes `Code`, `Nom` et `Type` ; un modèle est
+   téléchargeable depuis la fenêtre d'import) ou les saisir. `Type` accepte Rotary Club, Rotaract Club, Interact Club ou
+   Autres (vide = Autres) ; réimporter un club existant (même code) met à jour son type. Puis
    **désactiver le « Club de démonstration »** créé par le seed.
 4. **Séminaires / Sessions** : vérifier le séminaire créé par le seed (« Séminaire Effectif D9101 ») et créer les
    sessions réelles ; seules les sessions **ouvertes** sont proposées aux participants.

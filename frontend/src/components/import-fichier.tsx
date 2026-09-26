@@ -81,7 +81,8 @@ export function ImportFichier({
         {resultat && (
           <div className="mt-3 flex flex-col gap-2">
             <Alerte ton="succes">
-              {resultat.lignes} ligne(s) lue(s) : {resultat.crees} créée(s), {resultat.existants} déjà existante(s).
+              {resultat.lignes} ligne(s) lue(s) : {resultat.crees} créée(s)
+              {resultat.misAJour > 0 && `, ${resultat.misAJour} mise(s) à jour`}, {resultat.existants} déjà existante(s).
             </Alerte>
             {resultat.erreurs.length > 0 && (
               <Alerte>

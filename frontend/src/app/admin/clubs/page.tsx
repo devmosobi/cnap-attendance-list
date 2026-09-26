@@ -7,9 +7,10 @@ import { ImportFichier } from "@/components/import-fichier";
 import { ActionIcone, Alerte, Badge, Bouton, Carte, Champ, Confirmer, EnTete, Modale } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useDonnees } from "@/lib/hooks";
-import type { Club } from "@/lib/types";
+import { LIBELLES_TYPE_CLUB, TYPES_CLUB } from "@/lib/clubs";
+import type { Club, TypeClub } from "@/lib/types";
 
-type Formulaire = { existant: boolean; code: string; nom: string; estActif: boolean };
+type Formulaire = { existant: boolean; code: string; nom: string; type: TypeClub; estActif: boolean };
 
 export default function PageClubs() {
   const { donnees, erreur, recharger } = useDonnees<Club[]>("/api/admin/clubs");
@@ -37,11 +38,11 @@ export default function PageClubs() {
             <ImportFichier
               titre="Importer des clubs"
               chemin="/api/admin/clubs/import"
-              consigne="Deux colonnes : « Code » et « Nom » (les variantes « Code club », « Nom du club » ou « Club » sont reconnues). Les clubs déjà présents (même code ou même nom) sont ignorés."
+              consigne="Colonnes « Code », « Nom » et « Type » (Rotary Club, Rotaract Club, Interact Club ou Autres ; vide = Autres). Un club déjà présent (même code) voit seulement son type mis à jour."
               modele="/api/admin/clubs/modele"
               onTermine={recharger}
             />
-            <Bouton onClick={() => setFormulaire({ existant: false, code: "", nom: "", estActif: true })}>
+            <Bouton onClick={() => setFormulaire({ existant: false, code: "", nom: "", type: "Rotary", estActif: true })}>
               <Plus size={16} aria-hidden /> Nouveau club
             </Bouton>
           </>
@@ -63,12 +64,13 @@ export default function PageClubs() {
           colonnes={[
             { cle: "code", titre: "Code", valeur: (c) => c.code, classe: "font-mono text-xs" },
             { cle: "nom", titre: "Nom", valeur: (c) => c.nom, rendu: (c) => <span className="font-semibold">{c.nom}</span> },
+            { cle: "type", titre: "Type", valeur: (c) => LIBELLES_TYPE_CLUB[c.type], filtre: "liste" },
             { cle: "statut", titre: "Statut", valeur: (c) => (c.estActif ? "Actif" : "Inactif"), filtre: "liste", rendu: (c) => <Badge actif={c.estActif} /> },
             { cle: "inscrits", titre: "Inscrits", valeur: (c) => c.nombreInscrits, type: "nombre" },
           ]}
           actions={(c) => (
             <>
-              <ActionIcone libelle="Modifier" icone={Pencil} onClick={() => setFormulaire({ existant: true, code: c.code, nom: c.nom, estActif: c.estActif })} />
+              <ActionIcone libelle="Modifier" icone={Pencil} onClick={() => setFormulaire({ existant: true, code: c.code, nom: c.nom, type: c.type, estActif: c.estActif })} />
               <ActionIcone
                 libelle={c.estActif ? "Désactiver" : "Activer"}
                 icone={c.estActif ? PowerOff : Power}
@@ -121,8 +123,8 @@ function FormulaireClub({ valeurs, onFermer, onEnregistre }: { valeurs: Formulai
     setErreur(null);
     try {
       if (v.existant)
-        await api(`/api/admin/clubs/${encodeURIComponent(v.code)}`, { method: "PUT", body: { nom: v.nom, estActif: v.estActif } });
-      else await api("/api/admin/clubs", { method: "POST", body: { code: v.code, nom: v.nom, estActif: v.estActif } });
+        await api(`/api/admin/clubs/${encodeURIComponent(v.code)}`, { method: "PUT", body: { nom: v.nom, type: v.type, estActif: v.estActif } });
+      else await api("/api/admin/clubs", { method: "POST", body: { code: v.code, nom: v.nom, type: v.type, estActif: v.estActif } });
       onEnregistre();
     } catch (e) {
       setErreur(e instanceof Error ? e.message : "Enregistrement impossible.");
@@ -146,6 +148,15 @@ function FormulaireClub({ valeurs, onFermer, onEnregistre }: { valeurs: Formulai
         </Champ>
         <Champ libelle="Nom">
           <input className="champ" value={v.nom} onChange={(e) => setV({ ...v, nom: e.target.value })} required maxLength={200} />
+        </Champ>
+        <Champ libelle="Type">
+          <select className="champ" value={v.type} onChange={(e) => setV({ ...v, type: e.target.value as TypeClub })}>
+            {TYPES_CLUB.map((t) => (
+              <option key={t} value={t}>
+                {LIBELLES_TYPE_CLUB[t]}
+              </option>
+            ))}
+          </select>
         </Champ>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" className="size-4 accent-rotary" checked={v.estActif} onChange={(e) => setV({ ...v, estActif: e.target.checked })} />

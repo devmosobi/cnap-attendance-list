@@ -28,7 +28,7 @@ public partial class ScanService(AppDbContext db, TimeProvider horloge, ILogger<
 
         var clubs = qr.Statut == QrCodeStatut.Inactif
             ? await db.Clubs.AsNoTracking().Where(c => c.EstActif).OrderBy(c => c.Nom)
-                .Select(c => new ClubOptionDto(c.Code, c.Nom)).ToListAsync(ct)
+                .Select(c => new ClubOptionDto(c.Code, c.Nom, c.Type)).ToListAsync(ct)
             : [];
 
         var presences = await db.Presences.AsNoTracking()

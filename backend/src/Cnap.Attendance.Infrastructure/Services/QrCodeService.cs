@@ -108,6 +108,6 @@ public class QrCodeService(AppDbContext db, TimeProvider horloge)
             .OrderByDescending(q => q.DateActivation.HasValue).ThenByDescending(q => q.DateActivation).ThenBy(q => q.Code)
             .Select(q => new QrCodeListeDto(
                 q.Code, q.Statut.ToString(), q.NomComplet, q.Email, q.ClubCode,
-                q.Club != null ? q.Club.Nom : null, q.SeminaireId,
+                q.Club != null ? q.Club.Nom : null, q.Club != null ? q.Club.Type : null, q.SeminaireId,
                 q.Seminaire != null ? q.Seminaire.Designation : null, q.DateActivation, q.Presences.Count));
 }

@@ -3,7 +3,8 @@ export type SessionPublic = { id: string; designation: string; heureDebut: strin
 export type ControlePosition = "Desactive" | "Signaler" | "Bloquer";
 export type ResultatPosition = "NonControle" | "SurPlace" | "HorsZone" | "NonLocalise";
 export type SeminairePublic = { id: string; designation: string; controlePosition: ControlePosition; sessions: SessionPublic[] };
-export type ClubOption = { code: string; nom: string };
+export type TypeClub = "Rotary" | "Rotaract" | "Interact" | "Autre";
+export type ClubOption = { code: string; nom: string; type: TypeClub };
 export type PresencePublic = { sessionId: string; session: string; heureDePointage: string };
 export type ScanEtat = {
   code: string;
@@ -46,7 +47,7 @@ export type Session = {
   estActif: boolean;
   nombrePresences: number;
 };
-export type Club = { code: string; nom: string; estActif: boolean; nombreInscrits: number };
+export type Club = { code: string; nom: string; type: TypeClub; estActif: boolean; nombreInscrits: number };
 export type QrCodeListe = {
   code: string;
   statut: string;
@@ -54,6 +55,7 @@ export type QrCodeListe = {
   email: string | null;
   clubCode: string | null;
   club: string | null;
+  typeClub: TypeClub | null;
   seminaireId: string | null;
   seminaire: string | null;
   dateActivation: string | null;
@@ -68,8 +70,8 @@ export type PresenceHistorique = {
   resultatPosition: ResultatPosition;
   distanceMetres: number | null;
 };
-export type QrCodeDetail = Omit<QrCodeListe, "nombrePresences"> & { presences: PresenceHistorique[] };
-export type ImportResultat = { lignes: number; crees: number; existants: number; erreurs: string[] };
+export type QrCodeDetail = Omit<QrCodeListe, "nombrePresences" | "typeClub"> & { presences: PresenceHistorique[] };
+export type ImportResultat = { lignes: number; crees: number; existants: number; erreurs: string[]; misAJour: number };
 export type PresenceListe = {
   id: string;
   qrCode: string;
@@ -77,6 +79,7 @@ export type PresenceListe = {
   email: string | null;
   clubCode: string | null;
   club: string | null;
+  typeClub: TypeClub | null;
   sessionId: string;
   session: string;
   seminaire: string;

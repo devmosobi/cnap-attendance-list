@@ -20,6 +20,7 @@ const nomSession = (libelle: string) => libelle.split(" – ").slice(1).join(" �
 const RAPPORTS = {
   sessions: { titre: "Présences par session", unite: "Présences", colonne: "Session", nomFichier: "presences-par-session", libelleAxe: nomSession },
   seminaires: { titre: "Inscrits par séminaire", unite: "Inscrits", colonne: "Séminaire", nomFichier: "inscrits-par-seminaire" },
+  types: { titre: "Inscrits par type de club", unite: "Inscrits", colonne: "Type de club", nomFichier: "inscrits-par-type-club" },
   clubs: { titre: "Inscrits par club", unite: "Inscrits", colonne: "Club", nomFichier: "inscrits-par-club" },
 } satisfies Record<string, DefinitionRapport>;
 
@@ -29,11 +30,13 @@ export default function TableauDeBord() {
   const q = construireQuery({ seminaireId });
   const sessions = useDonnees<RapportLigne[]>(`/api/admin/rapports/presences-par-session${q}`);
   const parSeminaire = useDonnees<RapportLigne[]>("/api/admin/rapports/inscrits-par-seminaire");
+  const types = useDonnees<RapportLigne[]>(`/api/admin/rapports/inscrits-par-type-club${q}`);
   const clubs = useDonnees<RapportLigne[]>(`/api/admin/rapports/inscrits-par-club${q}`);
   const lieu = useDonnees<RapportLieu[]>(`/api/admin/rapports/presences-par-lieu${q}`);
 
   const graphiqueSessions = useRef<HTMLDivElement>(null);
   const graphiqueSeminaires = useRef<HTMLDivElement>(null);
+  const graphiqueTypes = useRef<HTMLDivElement>(null);
   const graphiqueClubs = useRef<HTMLDivElement>(null);
   const [exportEnCours, setExportEnCours] = useState(false);
   // Pendant l'export PDF, les graphiques passent en palette claire (document imprimable).
@@ -45,6 +48,7 @@ export default function TableauDeBord() {
   const recharger = () => {
     sessions.recharger();
     parSeminaire.recharger();
+    types.recharger();
     clubs.recharger();
     lieu.recharger();
   };
@@ -99,6 +103,7 @@ export default function TableauDeBord() {
           await section(RAPPORTS.sessions, sessions.donnees, graphiqueSessions.current),
           ...sectionsLieu,
           await section(RAPPORTS.seminaires, parSeminaire.donnees, graphiqueSeminaires.current),
+          await section(RAPPORTS.types, types.donnees, graphiqueTypes.current),
           await section(RAPPORTS.clubs, clubs.donnees, graphiqueClubs.current),
         ],
       });
@@ -144,8 +149,9 @@ export default function TableauDeBord() {
         <RapportLieuCarte lignes={lieu.donnees} erreur={lieu.erreur} filtre={nomSeminaire} />
         <div className="grid gap-5 lg:grid-cols-2">
           <Rapport def={RAPPORTS.seminaires} donnees={parSeminaire} refGraphique={graphiqueSeminaires} captureClaire={captureClaire} />
-          <Rapport def={RAPPORTS.clubs} donnees={clubs} refGraphique={graphiqueClubs} filtre={nomSeminaire} captureClaire={captureClaire} />
+          <Rapport def={RAPPORTS.types} donnees={types} refGraphique={graphiqueTypes} filtre={nomSeminaire} captureClaire={captureClaire} />
         </div>
+        <Rapport def={RAPPORTS.clubs} donnees={clubs} refGraphique={graphiqueClubs} filtre={nomSeminaire} captureClaire={captureClaire} />
       </div>
     </>
   );

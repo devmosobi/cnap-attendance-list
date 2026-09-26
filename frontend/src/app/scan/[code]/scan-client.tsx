@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChoixTheme } from "@/components/choix-theme";
 import { api, ApiError } from "@/lib/api";
+import { LIBELLES_TYPE_CLUB, TYPES_CLUB } from "@/lib/clubs";
 import { dateLongue, heure, plage } from "@/lib/format";
 import { obtenirPosition } from "@/lib/lieu";
 import type { PresenceConfirmation, ScanEtat } from "@/lib/types";
@@ -171,11 +172,20 @@ function Formulaire({
         <Champ libelle="Votre club" id="club">
           <select id="club" className="champ" value={clubCode} onChange={(e) => setClubCode(e.target.value)} required>
             <option value="">Sélectionnez votre club…</option>
-            {donnees.clubs.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.nom}
-              </option>
-            ))}
+            {TYPES_CLUB.map((t) => {
+              const clubs = donnees.clubs.filter((c) => c.type === t);
+              return (
+                clubs.length > 0 && (
+                  <optgroup key={t} label={LIBELLES_TYPE_CLUB[t]}>
+                    {clubs.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.nom}
+                      </option>
+                    ))}
+                  </optgroup>
+                )
+              );
+            })}
           </select>
         </Champ>
       )}
