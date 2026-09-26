@@ -59,7 +59,7 @@ export default function PageConnexion() {
       <ChoixTheme className="absolute top-4 right-4" />
       <div className="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-md">
         <div className="mb-6 flex flex-col items-center gap-3">
-          <Image src="/logo-cnap.jpeg" alt="Commission Nationale Formation" width={240} height={80} priority className="logo-plaque h-auto w-52" />
+          <Image src="/logo-cnap.jpeg" alt="Commission Nationale Apprentissage" width={240} height={80} priority className="logo-plaque h-auto w-52" />
           <h1 className="text-lg font-bold">Console d&apos;administration</h1>
         </div>
         <Suspense>

@@ -227,7 +227,7 @@ export async function exporterPdfSections({
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(8);
     pdf.setTextColor(91, 100, 117);
-    pdf.text("Commission Nationale Formation – District Rotary 9101", marge, hauteurPage - 7);
+    pdf.text("Commission Nationale Apprentissage – District Rotary 9101", marge, hauteurPage - 7);
     pdf.text(`Page ${i} / ${total}`, largeurPage - marge, hauteurPage - 7, { align: "right" });
   }
 

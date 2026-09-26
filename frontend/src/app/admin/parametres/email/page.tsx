@@ -12,7 +12,7 @@ const VIDE = {
   utilisateur: "",
   motDePasse: "",
   expediteurEmail: "",
-  expediteurNom: "Commission Nationale Formation",
+  expediteurNom: "Commission Nationale Apprentissage",
   utiliserTls: true,
   estActif: true,
 };

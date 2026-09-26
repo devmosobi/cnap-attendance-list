@@ -4,7 +4,7 @@ import { SCRIPT_THEME } from "@/lib/theme-script";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Gestion Liste de Présence – Commission Nationale Formation",
+  title: "Gestion Liste de Présence – Commission Nationale Apprentissage",
   description: "Validation de présence aux séminaires de formation du District Rotary 9101 (Côte d'Ivoire).",
   robots: { index: false, follow: false },
 };

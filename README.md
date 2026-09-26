@@ -1,4 +1,4 @@
-# Gestion Liste de Présence – Commission Nationale Formation
+# Gestion Liste de Présence – Commission Nationale Apprentissage
 
 Plateforme de pointage des participants aux séminaires de formation du **District Rotary 9101 (Côte d'Ivoire)**.
 

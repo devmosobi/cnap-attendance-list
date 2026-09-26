@@ -1,4 +1,4 @@
-# Gestion Liste de Présence – Commission Nationale Formation
+# Gestion Liste de Présence – Commission Nationale Apprentissage
 # Production (Dockploy) : aucun port publié. Les domaines se déclarent dans Dockploy (onglet Domains)
 # sur le service « frontend », port 3000 ; Next.js relaie /api vers le backend en interne.
 # Base de données : serveur PostgreSQL externe (variables POSTGRES_*).
@@ -28,7 +28,7 @@ services:
       Smtp__Utilisateur: ${SMTP_USER:-}
       Smtp__MotDePasse: ${SMTP_PASSWORD:-}
       Smtp__ExpediteurEmail: ${SMTP_FROM_EMAIL:-}
-      Smtp__ExpediteurNom: ${SMTP_FROM_NAME:-Commission Nationale Formation}
+      Smtp__ExpediteurNom: ${SMTP_FROM_NAME:-Commission Nationale Apprentissage}
       Smtp__UtiliserTls: ${SMTP_TLS:-true}
 
   frontend:

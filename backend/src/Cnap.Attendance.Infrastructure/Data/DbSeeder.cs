@@ -41,7 +41,7 @@ public class SmtpInitialOptions
     public string? Utilisateur { get; set; }
     public string? MotDePasse { get; set; }
     public string? ExpediteurEmail { get; set; }
-    public string ExpediteurNom { get; set; } = "Commission Nationale Formation";
+    public string ExpediteurNom { get; set; } = "Commission Nationale Apprentissage";
     public bool UtiliserTls { get; set; } = true;
 }
 

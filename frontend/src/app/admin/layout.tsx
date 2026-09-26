@@ -60,7 +60,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         >
           <div className="flex h-full flex-col">
             <div className="border-b border-bordure-douce p-4">
-              <Image src="/logo-cnap.jpeg" alt="Commission Nationale Formation" width={220} height={73} className="logo-plaque h-auto w-full" />
+              <Image src="/logo-cnap.jpeg" alt="Commission Nationale Apprentissage" width={220} height={73} className="logo-plaque h-auto w-full" />
             </div>
             <nav className="flex-1 overflow-y-auto p-3">
               {MENU.filter((m) => !m.admin || utilisateur.role === "Administrateur").map((m) => (

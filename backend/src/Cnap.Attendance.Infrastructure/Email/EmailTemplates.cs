@@ -50,14 +50,14 @@ public static class EmailTemplates
             <tr><td align="center">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden">
                 <tr><td style="padding:24px 24px 8px;text-align:center">
-                  <img src="cid:{LogoContentId}" alt="Commission Nationale Formation" width="240" style="max-width:100%;height:auto;border:0">
+                  <img src="cid:{LogoContentId}" alt="Commission Nationale Apprentissage" width="240" style="max-width:100%;height:auto;border:0">
                 </td></tr>
                 <tr><td style="padding:0 24px;border-bottom:4px solid #f7a81b"></td></tr>
                 <tr><td style="padding:24px;color:#17233c;font-size:15px;line-height:1.5">
                   {contenu}
                 </td></tr>
                 <tr><td style="padding:16px 24px 24px;color:#5b6475;font-size:12px;text-align:center;border-top:1px solid #e3e7ef">
-                  Commission Nationale Formation – District Rotary 9101 (Côte d'Ivoire)<br>
+                  Commission Nationale Apprentissage – District Rotary 9101 (Côte d'Ivoire)<br>
                   <a href="{SiteCommission}" style="color:#17458f">{SiteCommission}</a>
                 </td></tr>
               </table>

@@ -39,7 +39,7 @@ export function ScanClient({ code }: { code: string | null }) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pb-8">
       <header className="flex flex-col items-center gap-2 pt-5 pb-4">
-        <Image src="/logo-cnap.jpeg" alt="Commission Nationale Formation" width={240} height={80} priority className="logo-plaque h-auto w-56" />
+        <Image src="/logo-cnap.jpeg" alt="Commission Nationale Apprentissage" width={240} height={80} priority className="logo-plaque h-auto w-56" />
         <p className="text-center text-xs font-semibold tracking-wide text-gris uppercase">Liste de présence · District 9101</p>
       </header>
       <div className="h-1 w-full rounded-full bg-or" />
@@ -67,7 +67,7 @@ export function ScanClient({ code }: { code: string | null }) {
 
       <footer className="mt-8 flex flex-col items-center gap-3 text-center text-xs text-gris">
         <ChoixTheme />
-        Commission Nationale Formation ·{" "}
+        Commission Nationale Apprentissage ·{" "}
         <a className="underline" href="https://cnap-ci.rotary-district9101.org/" target="_blank" rel="noreferrer">
           cnap-ci.rotary-district9101.org
         </a>

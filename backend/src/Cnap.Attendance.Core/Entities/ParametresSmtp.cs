@@ -11,7 +11,7 @@ public class ParametresSmtp
     public string? Utilisateur { get; set; }
     public string? MotDePasseChiffre { get; set; }
     public string ExpediteurEmail { get; set; } = string.Empty;
-    public string ExpediteurNom { get; set; } = "Commission Nationale Formation";
+    public string ExpediteurNom { get; set; } = "Commission Nationale Apprentissage";
     public bool UtiliserTls { get; set; } = true;
     public bool EstActif { get; set; } = true;
     public DateTimeOffset UpdatedAt { get; set; }
