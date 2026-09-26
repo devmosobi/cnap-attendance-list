@@ -20,7 +20,7 @@ export default function PageQrCode({ params }: { params: Promise<{ code: string 
 
   return (
     <>
-      <Link href="/admin/qrcodes" className="text-sm text-rotary hover:underline">
+      <Link href="/admin/qrcodes" className="text-sm text-lien hover:underline">
         ← QR Codes
       </Link>
       <EnTete

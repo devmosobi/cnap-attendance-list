@@ -1,18 +1,59 @@
 @import "tailwindcss";
 
+/* Le mode sombre suit la classe .dark posée sur <html> (choix de l'utilisateur ou réglage du système). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Couleurs de marque, identiques dans les deux thèmes. */
 @theme {
   --color-rotary: #17458f;
   --color-rotary-fonce: #0f2f63;
-  --color-rotary-clair: #e8eef8;
   --color-or: #f7a81b;
-  --color-encre: #17233c;
-  --color-gris: #5b6475;
-  --color-fond: #f4f6fa;
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-html {
+/* Couleurs sémantiques : leur valeur dépend du thème. */
+@theme inline {
+  --color-fond: var(--fond);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-bordure: var(--bordure);
+  --color-bordure-forte: var(--bordure-forte);
+  --color-bordure-douce: var(--bordure-douce);
+  --color-neutre: var(--neutre);
+  --color-encre: var(--encre);
+  --color-gris: var(--gris);
+  --color-lien: var(--lien);
+  --color-rotary-clair: var(--rotary-clair);
+}
+
+:root {
   color-scheme: light;
+  --fond: #f4f6fa;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --bordure: #e2e8f0;
+  --bordure-forte: #cbd5e1;
+  --bordure-douce: #f1f5f9;
+  --neutre: #e2e8f0;
+  --encre: #17233c;
+  --gris: #5b6475;
+  --lien: #17458f;
+  --rotary-clair: #e8eef8;
+}
+
+.dark {
+  color-scheme: dark;
+  --fond: #0b1120;
+  --surface: #131a2a;
+  --surface-2: #1a2336;
+  --bordure: #283450;
+  --bordure-forte: #3a4763;
+  --bordure-douce: #1f2940;
+  --neutre: #2a3550;
+  --encre: #e6ebf5;
+  --gris: #9aa6bd;
+  --lien: #8fb3ff;
+  --rotary-clair: #1b2a4a;
 }
 
 body {
@@ -23,7 +64,12 @@ body {
 
 @layer components {
   .champ {
-    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-encre outline-none transition
-      focus:border-rotary focus:ring-2 focus:ring-rotary/20 disabled:bg-slate-100 disabled:text-gris;
+    @apply w-full rounded-lg border border-bordure-forte bg-surface px-3 py-2.5 text-base text-encre outline-none transition
+      focus:border-lien focus:ring-2 focus:ring-lien/20 disabled:bg-surface-2 disabled:text-gris;
+  }
+
+  /* Le logo (JPEG sur fond blanc) garde sa plaque blanche en mode sombre. */
+  .logo-plaque {
+    @apply rounded-lg dark:bg-white dark:px-2 dark:py-1;
   }
 }

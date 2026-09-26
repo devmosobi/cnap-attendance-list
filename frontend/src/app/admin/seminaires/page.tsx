@@ -87,7 +87,7 @@ export default function PageSeminaires() {
                   <span className="text-gris">Désactivé</span>
                 ) : (
                   <span className="inline-flex items-center gap-1">
-                    <MapPin size={14} aria-hidden className="text-rotary" />
+                    <MapPin size={14} aria-hidden className="text-lien" />
                     {LIBELLES_CONTROLE_COURTS[s.controlePosition]} · {s.rayonMetres} m
                   </span>
                 ),
@@ -195,7 +195,7 @@ function FormulaireSeminaire({ valeurs, onFermer, onEnregistre }: { valeurs: For
           Actif (proposé aux participants)
         </label>
 
-        <fieldset className="flex flex-col gap-3 rounded-xl border border-slate-200 p-4">
+        <fieldset className="flex flex-col gap-3 rounded-xl border border-bordure p-4">
           <legend className="px-1 text-sm font-bold">Lieu de la formation</legend>
           <Champ
             libelle="Contrôle de la position"
@@ -226,7 +226,7 @@ function FormulaireSeminaire({ valeurs, onFermer, onEnregistre }: { valeurs: For
             </Bouton>
             {coordonnees && (
               <a
-                className="inline-flex items-center gap-1 font-semibold text-rotary hover:underline"
+                className="inline-flex items-center gap-1 font-semibold text-lien hover:underline"
                 href={`https://www.google.com/maps?q=${coordonnees.latitude},${coordonnees.longitude}`}
                 target="_blank"
                 rel="noreferrer"

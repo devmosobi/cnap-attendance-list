@@ -119,6 +119,10 @@ tableaux du tableau de bord) partagent le même fonctionnement :
   exportées, et les filtres actifs sont rappelés en tête du PDF.
 
 Le tableau de bord s'exporte aussi en un seul PDF (graphiques et tableaux) avec le bouton « Exporter en PDF ».
+
+**Thème d'affichage** : clair, sombre ou automatique (réglage de l'appareil, par défaut), au choix dans le bas du menu
+de la console, sur la page de connexion et en pied de la page de scan. Le choix est mémorisé dans le navigateur.
+Les exports PDF restent toujours en version claire.
 Les exports sont générés dans le navigateur.
 
 ## Première mise en service

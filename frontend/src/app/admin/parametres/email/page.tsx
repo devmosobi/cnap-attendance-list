@@ -157,7 +157,7 @@ export default function PageParametresEmail() {
                   <strong className="tabular-nums">{file.donnees.envoyes}</strong> envoyé(s) ·{" "}
                   <strong className="tabular-nums">{file.donnees.echecs}</strong> en échec
                 </p>
-                {file.donnees.derniereErreur && <p className="text-xs break-words text-red-700">Dernière erreur : {file.donnees.derniereErreur}</p>}
+                {file.donnees.derniereErreur && <p className="text-xs break-words text-red-700 dark:text-red-300">Dernière erreur : {file.donnees.derniereErreur}</p>}
                 {file.donnees.echecs > 0 && (
                   <Bouton variante="secondaire" taille="petit" onClick={relancer}>
                     Relancer les envois en échec

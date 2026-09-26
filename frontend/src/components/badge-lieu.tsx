@@ -7,9 +7,9 @@ export function BadgeLieu({ resultat, distance }: { resultat: ResultatPosition; 
   if (resultat === "NonControle") return <span className="text-xs text-gris">—</span>;
 
   const style = {
-    SurPlace: { classe: "bg-emerald-100 text-emerald-800", Icone: MapPinCheck },
-    HorsZone: { classe: "bg-amber-100 text-amber-800", Icone: MapPinX },
-    NonLocalise: { classe: "bg-slate-200 text-slate-700", Icone: MapPinOff },
+    SurPlace: { classe: "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300", Icone: MapPinCheck },
+    HorsZone: { classe: "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300", Icone: MapPinX },
+    NonLocalise: { classe: "bg-neutre text-encre", Icone: MapPinOff },
   }[resultat];
 
   return (

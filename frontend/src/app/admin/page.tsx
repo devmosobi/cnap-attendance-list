@@ -36,6 +36,8 @@ export default function TableauDeBord() {
   const graphiqueSeminaires = useRef<HTMLDivElement>(null);
   const graphiqueClubs = useRef<HTMLDivElement>(null);
   const [exportEnCours, setExportEnCours] = useState(false);
+  // Pendant l'export PDF, les graphiques passent en palette claire (document imprimable).
+  const [captureClaire, setCaptureClaire] = useState(false);
   const [erreurExport, setErreurExport] = useState<string | null>(null);
 
   const nomSeminaire = seminaires.donnees?.find((s) => s.id === seminaireId)?.designation;
@@ -52,6 +54,8 @@ export default function TableauDeBord() {
     setErreurExport(null);
     try {
       const { toPng } = await import("html-to-image");
+      setCaptureClaire(true);
+      await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(ok, 50))));
       const section = async (def: DefinitionRapport, lignes: RapportLigne[] | null, noeud: HTMLDivElement | null): Promise<SectionPdf> => {
         const donnees = lignes ?? [];
         const total = donnees.reduce((s, l) => s + l.valeur, 0);
@@ -101,6 +105,7 @@ export default function TableauDeBord() {
     } catch {
       setErreurExport("L'export PDF a échoué. Veuillez réessayer.");
     } finally {
+      setCaptureClaire(false);
       setExportEnCours(false);
     }
   };
@@ -135,11 +140,11 @@ export default function TableauDeBord() {
         </div>
       )}
       <div className="grid gap-5">
-        <Rapport def={RAPPORTS.sessions} donnees={sessions} refGraphique={graphiqueSessions} filtre={nomSeminaire} />
+        <Rapport def={RAPPORTS.sessions} donnees={sessions} refGraphique={graphiqueSessions} filtre={nomSeminaire} captureClaire={captureClaire} />
         <RapportLieuCarte lignes={lieu.donnees} erreur={lieu.erreur} filtre={nomSeminaire} />
         <div className="grid gap-5 lg:grid-cols-2">
-          <Rapport def={RAPPORTS.seminaires} donnees={parSeminaire} refGraphique={graphiqueSeminaires} />
-          <Rapport def={RAPPORTS.clubs} donnees={clubs} refGraphique={graphiqueClubs} filtre={nomSeminaire} />
+          <Rapport def={RAPPORTS.seminaires} donnees={parSeminaire} refGraphique={graphiqueSeminaires} captureClaire={captureClaire} />
+          <Rapport def={RAPPORTS.clubs} donnees={clubs} refGraphique={graphiqueClubs} filtre={nomSeminaire} captureClaire={captureClaire} />
         </div>
       </div>
     </>
@@ -151,11 +156,13 @@ function Rapport({
   donnees: { donnees, erreur },
   refGraphique,
   filtre,
+  captureClaire = false,
 }: {
   def: DefinitionRapport;
   donnees: { donnees: RapportLigne[] | null; erreur: string | null };
   refGraphique: React.RefObject<HTMLDivElement | null>;
   filtre?: string;
+  captureClaire?: boolean;
 }) {
   const total = donnees?.reduce((s, l) => s + l.valeur, 0) ?? 0;
   return (
@@ -163,11 +170,11 @@ function Rapport({
       {erreur && <Alerte>{erreur}</Alerte>}
       {donnees && (
         <>
-          <div ref={refGraphique} className="bg-white">
-            <GraphiqueBarres lignes={donnees} unite={def.unite} libelleAxe={def.libelleAxe} />
+          <div ref={refGraphique} className={captureClaire ? "bg-white" : "bg-surface"}>
+            <GraphiqueBarres lignes={donnees} unite={def.unite} libelleAxe={def.libelleAxe} forcerClair={captureClaire} />
           </div>
-          <details className="group mt-3 border-t border-slate-100 pt-3">
-            <summary className="cursor-pointer text-sm font-semibold text-rotary select-none">
+          <details className="group mt-3 border-t border-bordure-douce pt-3">
+            <summary className="cursor-pointer text-sm font-semibold text-lien select-none">
               <span className="group-open:hidden">Afficher le tableau</span>
               <span className="hidden group-open:inline">Masquer le tableau</span>
             </summary>

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import { ChoixTheme } from "@/components/choix-theme";
 import { Alerte, Bouton, Champ } from "@/components/ui";
 import { api } from "@/lib/api";
 import type { UtilisateurConnecte } from "@/lib/types";
@@ -54,10 +55,11 @@ function FormulaireConnexion() {
 
 export default function PageConnexion() {
   return (
-    <main className="flex min-h-dvh items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-md">
+    <main className="relative flex min-h-dvh items-center justify-center px-4">
+      <ChoixTheme className="absolute top-4 right-4" />
+      <div className="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-md">
         <div className="mb-6 flex flex-col items-center gap-3">
-          <Image src="/logo-cnap.jpeg" alt="Commission Nationale Formation" width={240} height={80} priority className="h-auto w-52" />
+          <Image src="/logo-cnap.jpeg" alt="Commission Nationale Formation" width={240} height={80} priority className="logo-plaque h-auto w-52" />
           <h1 className="text-lg font-bold">Console d&apos;administration</h1>
         </div>
         <Suspense>

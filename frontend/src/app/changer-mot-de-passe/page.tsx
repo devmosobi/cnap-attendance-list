@@ -57,7 +57,7 @@ function FormulaireMotDePasse() {
 export default function PageChangerMotDePasse() {
   return (
     <main className="flex min-h-dvh items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-md">
+      <div className="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-md">
         <h1 className="text-lg font-bold">Changer votre mot de passe</h1>
         <p className="mt-1 mb-5 text-sm text-gris">Pour des raisons de sécurité, choisissez un nouveau mot de passe personnel.</p>
         <Suspense>

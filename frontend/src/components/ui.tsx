@@ -12,9 +12,9 @@ export function Bouton({
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variante?: "principal" | "secondaire" | "danger" | "lien"; taille?: "normal" | "petit" }) {
   const styles = {
     principal: "bg-rotary text-white hover:bg-rotary-fonce",
-    secondaire: "border border-slate-300 bg-white text-encre hover:bg-slate-50",
+    secondaire: "border border-bordure-forte bg-surface text-encre hover:bg-surface-2",
     danger: "bg-red-600 text-white hover:bg-red-700",
-    lien: "text-rotary hover:underline",
+    lien: "text-lien hover:underline",
   }[variante];
   const dimensions = variante === "lien" ? "" : taille === "petit" ? "px-2.5 py-1.5 text-xs" : "px-4 py-2 text-sm";
   return (
@@ -38,9 +38,9 @@ export function Champ({ libelle, aide, children }: { libelle: string; aide?: str
 
 export function Carte({ titre, actions, children, className = "" }: { titre?: string; actions?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
-    <section className={`rounded-xl border border-slate-200 bg-white shadow-sm ${className}`}>
+    <section className={`rounded-xl border border-bordure bg-surface shadow-sm ${className}`}>
       {(titre || actions) && (
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-bordure-douce px-4 py-3">
           {titre && <h2 className="font-bold">{titre}</h2>}
           {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
         </header>
@@ -65,7 +65,7 @@ export function EnTete({ titre, description, actions }: { titre: string; descrip
 export function Badge({ actif, oui = "Actif", non = "Inactif" }: { actif: boolean; oui?: string; non?: string }) {
   return (
     <span
-      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${actif ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"}`}
+      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${actif ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300" : "bg-neutre text-encre"}`}
     >
       {actif ? oui : non}
     </span>
@@ -92,9 +92,9 @@ export function ActionIcone({
   disabled?: boolean;
 }) {
   const couleurs = {
-    normal: "text-gris hover:bg-rotary-clair hover:text-rotary",
-    danger: "text-gris hover:bg-red-50 hover:text-red-700",
-    succes: "text-gris hover:bg-emerald-50 hover:text-emerald-700",
+    normal: "text-gris hover:bg-rotary-clair hover:text-lien",
+    danger: "text-gris hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-700 dark:hover:text-red-300",
+    succes: "text-gris hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-300",
   }[ton];
   const classe = `inline-flex rounded-md p-1.5 transition focus-visible:outline-2 focus-visible:outline-rotary disabled:opacity-40 ${couleurs}`;
   return (
@@ -110,7 +110,7 @@ export function ActionIcone({
       )}
       <span
         role="tooltip"
-        className="pointer-events-none absolute bottom-full left-0 z-30 mb-1 rounded bg-encre px-2 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+        className="pointer-events-none absolute bottom-full left-0 z-30 mb-1 rounded bg-slate-800 px-2 py-1 dark:bg-slate-700 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
       >
         {libelle}
       </span>
@@ -133,12 +133,12 @@ export function Modale({ titre, ouverte, onFermer, children }: { titre: string; 
         role="dialog"
         aria-modal="true"
         aria-label={titre}
-        className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:rounded-2xl"
+        className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-surface shadow-xl sm:rounded-2xl"
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <header className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+        <header className="flex items-center justify-between border-b border-bordure-douce px-5 py-3">
           <h2 className="font-bold">{titre}</h2>
-          <button type="button" onClick={onFermer} className="rounded p-1 text-2xl leading-none text-gris hover:bg-slate-100" aria-label="Fermer">
+          <button type="button" onClick={onFermer} className="rounded p-1 text-2xl leading-none text-gris hover:bg-surface-2" aria-label="Fermer">
             ×
           </button>
         </header>
@@ -191,9 +191,9 @@ export function Confirmer({
 
 export function Alerte({ ton = "erreur", children }: { ton?: "erreur" | "succes" | "info"; children: React.ReactNode }) {
   const styles = {
-    erreur: "border-red-200 bg-red-50 text-red-800",
-    succes: "border-emerald-200 bg-emerald-50 text-emerald-800",
-    info: "border-sky-200 bg-sky-50 text-sky-800",
+    erreur: "border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300",
+    succes: "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300",
+    info: "border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300",
   }[ton];
   return (
     <div role={ton === "erreur" ? "alert" : "status"} className={`rounded-lg border p-3 text-sm ${styles}`}>

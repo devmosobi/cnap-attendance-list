@@ -192,9 +192,9 @@ export function TableDonnees<T>({
 
       {(erreur || erreurExport) && <Alerte>{erreur ?? erreurExport}</Alerte>}
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200">
+      <div className="overflow-x-auto rounded-lg border border-bordure">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="bg-slate-50 text-xs tracking-wide text-gris uppercase">
+          <thead className="bg-surface-2 text-xs tracking-wide text-gris uppercase">
             <tr>
               {actions && <th className="w-px px-3 py-2 font-semibold whitespace-nowrap">Actions</th>}
               {colonnes.map((c) => {
@@ -212,7 +212,7 @@ export function TableDonnees<T>({
                       <button
                         type="button"
                         onClick={() => basculerTri(c.cle)}
-                        className={`inline-flex items-center gap-1 uppercase hover:text-rotary ${actif ? "text-rotary" : ""}`}
+                        className={`inline-flex items-center gap-1 uppercase hover:text-lien ${actif ? "text-lien" : ""}`}
                         title={`Trier par ${c.titre.toLowerCase()}`}
                       >
                         {c.titre}
@@ -223,13 +223,13 @@ export function TableDonnees<T>({
                 );
               })}
             </tr>
-            <tr className="border-t border-slate-200 bg-white normal-case">
+            <tr className="border-t border-bordure bg-surface normal-case">
               {actions && <th className="px-2 py-1.5" />}
               {colonnes.map((c) => (
                 <th key={c.cle} className="px-2 py-1.5 font-normal">
                   {c.filtre === false ? null : c.filtre === "liste" ? (
                     <select
-                      className="w-full min-w-24 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-encre"
+                      className="w-full min-w-24 rounded-md border border-bordure-forte bg-surface px-2 py-1 text-xs text-encre"
                       value={filtres[c.cle] ?? ""}
                       onChange={(e) => modifierFiltre(c.cle, e.target.value)}
                       aria-label={`Filtrer par ${c.titre.toLowerCase()}`}
@@ -243,7 +243,7 @@ export function TableDonnees<T>({
                     </select>
                   ) : (
                     <input
-                      className="w-full min-w-20 rounded-md border border-slate-300 px-2 py-1 text-xs text-encre"
+                      className="w-full min-w-20 rounded-md border border-bordure-forte px-2 py-1 text-xs text-encre"
                       placeholder="Filtrer…"
                       value={filtres[c.cle] ?? ""}
                       onChange={(e) => modifierFiltre(c.cle, e.target.value)}
@@ -254,9 +254,9 @@ export function TableDonnees<T>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-bordure-douce">
             {visibles.map((l) => (
-              <tr key={cleLigne(l)} className="hover:bg-slate-50">
+              <tr key={cleLigne(l)} className="hover:bg-surface-2">
                 {actions && (
                   <td className="px-2 py-1.5 align-middle whitespace-nowrap">
                     <div className="flex items-center gap-0.5">{actions(l)}</div>
@@ -279,7 +279,7 @@ export function TableDonnees<T>({
         <label className="flex items-center gap-2">
           Lignes par page
           <select
-            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-encre"
+            className="rounded-md border border-bordure-forte bg-surface px-2 py-1 text-encre"
             value={taille}
             onChange={(e) => (setTaille(Number(e.target.value)), setPage(1))}
           >
@@ -323,7 +323,7 @@ function BoutonPage({ libelle, disabled, onClick, children }: { libelle: string;
       title={libelle}
       disabled={disabled}
       onClick={onClick}
-      className="rounded-md border border-slate-300 bg-white p-1 text-encre hover:bg-slate-50 disabled:opacity-40"
+      className="rounded-md border border-bordure-forte bg-surface p-1 text-encre hover:bg-surface-2 disabled:opacity-40"
     >
       {children}
     </button>

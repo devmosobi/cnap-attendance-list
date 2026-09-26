@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { FournisseurTheme } from "@/lib/theme";
+import { SCRIPT_THEME } from "@/lib/theme-script";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,13 +12,22 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#17458f",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#17458f" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b1120" },
+  ],
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr">
-      <body className="min-h-dvh antialiased">{children}</body>
+    // La classe « dark » est posée avant l'hydratation par SCRIPT_THEME.
+    <html lang="fr" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_THEME }} />
+      </head>
+      <body className="min-h-dvh antialiased">
+        <FournisseurTheme>{children}</FournisseurTheme>
+      </body>
     </html>
   );
 }

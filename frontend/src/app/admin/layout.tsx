@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ChoixTheme } from "@/components/choix-theme";
 import { api } from "@/lib/api";
 import { UtilisateurContext } from "@/lib/hooks";
 import type { UtilisateurConnecte } from "@/lib/types";
@@ -53,13 +54,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <UtilisateurContext.Provider value={utilisateur}>
       <div className="min-h-dvh lg:flex">
         <aside
-          className={`fixed inset-y-0 left-0 z-40 w-64 transform border-r border-slate-200 bg-white transition lg:static lg:translate-x-0 ${
+          className={`fixed inset-y-0 left-0 z-40 w-64 transform border-r border-bordure bg-surface transition lg:static lg:translate-x-0 ${
             menuOuvert ? "translate-x-0 shadow-xl" : "-translate-x-full"
           }`}
         >
           <div className="flex h-full flex-col">
-            <div className="border-b border-slate-100 p-4">
-              <Image src="/logo-cnap.jpeg" alt="Commission Nationale Formation" width={220} height={73} className="h-auto w-full" />
+            <div className="border-b border-bordure-douce p-4">
+              <Image src="/logo-cnap.jpeg" alt="Commission Nationale Formation" width={220} height={73} className="logo-plaque h-auto w-full" />
             </div>
             <nav className="flex-1 overflow-y-auto p-3">
               {MENU.filter((m) => !m.admin || utilisateur.role === "Administrateur").map((m) => (
@@ -74,27 +75,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </Link>
               ))}
             </nav>
-            <div className="border-t border-slate-100 p-4 text-sm">
+            <div className="border-t border-bordure-douce p-4 text-sm">
               <p className="font-semibold">{utilisateur.nomComplet}</p>
               <p className="text-xs text-gris">
                 {utilisateur.email} · {utilisateur.role}
               </p>
               <div className="mt-2 flex gap-3 text-xs">
-                <Link href="/changer-mot-de-passe" className="text-rotary hover:underline">
+                <Link href="/changer-mot-de-passe" className="text-lien hover:underline">
                   Mot de passe
                 </Link>
-                <button type="button" onClick={deconnecter} className="text-red-700 hover:underline">
+                <button type="button" onClick={deconnecter} className="text-red-700 dark:text-red-300 hover:underline">
                   Déconnexion
                 </button>
               </div>
+              <ChoixTheme className="mt-3" />
             </div>
           </div>
         </aside>
         {menuOuvert && <div className="fixed inset-0 z-30 bg-slate-900/30 lg:hidden" onClick={() => setMenuOuvert(false)} />}
 
         <div className="min-w-0 flex-1">
-          <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
-            <button type="button" onClick={() => setMenuOuvert(true)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold">
+          <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-bordure bg-surface px-4 py-3 lg:hidden">
+            <button type="button" onClick={() => setMenuOuvert(true)} className="rounded-lg border border-bordure-forte px-3 py-1.5 text-sm font-semibold">
               ☰ Menu
             </button>
             <span className="text-sm font-bold">Liste de présence</span>

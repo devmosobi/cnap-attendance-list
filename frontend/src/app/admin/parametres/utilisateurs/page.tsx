@@ -50,7 +50,7 @@ export default function PageUtilisateurs() {
               rendu: (u) => (
                 <>
                   <span className="font-semibold">{u.nomComplet}</span>
-                  {u.doitChangerMotDePasse && <span className="block text-xs text-amber-700">Mot de passe à changer</span>}
+                  {u.doitChangerMotDePasse && <span className="block text-xs text-amber-700 dark:text-amber-300">Mot de passe à changer</span>}
                 </>
               ),
             },

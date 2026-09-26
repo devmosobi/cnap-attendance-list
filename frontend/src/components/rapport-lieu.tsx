@@ -25,10 +25,10 @@ export const pourcentage = (n: number, total: number) =>
 
 // Couleurs d'état réservées (vert = conforme, ambre = à vérifier), toujours accompagnées d'une icône et d'un libellé.
 const INDICATEURS: { cle: ResultatPosition; Icone: typeof MapPin; classe: string; aide: string }[] = [
-  { cle: "SurPlace", Icone: MapPinCheck, classe: "text-emerald-700 bg-emerald-50 border-emerald-200", aide: "Position dans le rayon du lieu" },
-  { cle: "HorsZone", Icone: MapPinX, classe: "text-amber-800 bg-amber-50 border-amber-200", aide: "À vérifier : position hors du rayon" },
-  { cle: "NonLocalise", Icone: MapPinOff, classe: "text-slate-700 bg-slate-50 border-slate-200", aide: "Position refusée ou indisponible" },
-  { cle: "NonControle", Icone: MapPin, classe: "text-gris bg-white border-slate-200", aide: "Séminaire sans contrôle du lieu" },
+  { cle: "SurPlace", Icone: MapPinCheck, classe: "text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800", aide: "Position dans le rayon du lieu" },
+  { cle: "HorsZone", Icone: MapPinX, classe: "text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800", aide: "À vérifier : position hors du rayon" },
+  { cle: "NonLocalise", Icone: MapPinOff, classe: "text-encre bg-surface-2 border-bordure", aide: "Position refusée ou indisponible" },
+  { cle: "NonControle", Icone: MapPin, classe: "text-gris bg-surface border-bordure", aide: "Séminaire sans contrôle du lieu" },
 ];
 
 export function RapportLieuCarte({ lignes, erreur, filtre }: { lignes: RapportLieu[] | null; erreur: string | null; filtre?: string }) {
@@ -59,8 +59,8 @@ export function RapportLieuCarte({ lignes, erreur, filtre }: { lignes: RapportLi
         </p>
       )}
       {lignes && (
-        <details className="group mt-4 border-t border-slate-100 pt-3" open={t.HorsZone > 0 || undefined}>
-          <summary className="cursor-pointer text-sm font-semibold text-rotary select-none">
+        <details className="group mt-4 border-t border-bordure-douce pt-3" open={t.HorsZone > 0 || undefined}>
+          <summary className="cursor-pointer text-sm font-semibold text-lien select-none">
             <span className="group-open:hidden">Afficher le détail par session</span>
             <span className="hidden group-open:inline">Masquer le détail par session</span>
           </summary>
@@ -80,7 +80,7 @@ export function RapportLieuCarte({ lignes, erreur, filtre }: { lignes: RapportLi
                   valeur: (l) => l.horsZone,
                   type: "nombre",
                   filtre: false,
-                  rendu: (l) => <span className={l.horsZone > 0 ? "font-bold text-amber-800" : ""}>{l.horsZone}</span>,
+                  rendu: (l) => <span className={l.horsZone > 0 ? "font-bold text-amber-800 dark:text-amber-300" : ""}>{l.horsZone}</span>,
                 },
                 { cle: "nonLocalise", titre: "Non localisée", valeur: (l) => l.nonLocalise, type: "nombre", filtre: false },
                 { cle: "nonControle", titre: "Non contrôlé", valeur: (l) => l.nonControle, type: "nombre", filtre: false },

@@ -3,6 +3,7 @@
 import { MapPin } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChoixTheme } from "@/components/choix-theme";
 import { api, ApiError } from "@/lib/api";
 import { dateLongue, heure, plage } from "@/lib/format";
 import { obtenirPosition } from "@/lib/lieu";
@@ -37,7 +38,7 @@ export function ScanClient({ code }: { code: string | null }) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pb-8">
       <header className="flex flex-col items-center gap-2 pt-5 pb-4">
-        <Image src="/logo-cnap.jpeg" alt="Commission Nationale Formation" width={240} height={80} priority className="h-auto w-56" />
+        <Image src="/logo-cnap.jpeg" alt="Commission Nationale Formation" width={240} height={80} priority className="logo-plaque h-auto w-56" />
         <p className="text-center text-xs font-semibold tracking-wide text-gris uppercase">Liste de présence · District 9101</p>
       </header>
       <div className="h-1 w-full rounded-full bg-or" />
@@ -63,7 +64,8 @@ export function ScanClient({ code }: { code: string | null }) {
         {etat.type === "confirme" && <Confirmation confirmation={etat.confirmation} onAutre={charger} />}
       </section>
 
-      <footer className="mt-8 text-center text-xs text-gris">
+      <footer className="mt-8 flex flex-col items-center gap-3 text-center text-xs text-gris">
+        <ChoixTheme />
         Commission Nationale Formation ·{" "}
         <a className="underline" href="https://cnap-ci.rotary-district9101.org/" target="_blank" rel="noreferrer">
           cnap-ci.rotary-district9101.org
@@ -157,8 +159,8 @@ function Formulaire({
           <p className="mt-1 text-sm text-gris">Première utilisation de votre billet : renseignez vos informations pour valider votre présence.</p>
         </div>
       ) : (
-        <div className="rounded-xl border border-rotary/20 bg-rotary-clair p-4">
-          <p className="text-xs font-semibold tracking-wide text-rotary uppercase">Participant</p>
+        <div className="rounded-xl border border-lien/30 bg-rotary-clair p-4">
+          <p className="text-xs font-semibold tracking-wide text-lien uppercase">Participant</p>
           <p className="mt-1 text-lg font-bold">{donnees.participant?.nomComplet}</p>
           <p className="text-sm text-gris">{donnees.participant?.clubNom}</p>
           <p className="text-sm text-gris">{donnees.participant?.emailMasque}</p>
@@ -180,7 +182,7 @@ function Formulaire({
 
       <Champ libelle="Séminaire" id="seminaire">
         {seminaires.length === 1 ? (
-          <p id="seminaire" className="champ bg-slate-50 font-semibold">
+          <p id="seminaire" className="champ bg-surface-2 font-semibold">
             {seminaires[0].designation}
           </p>
         ) : (
@@ -206,10 +208,10 @@ function Formulaire({
                 key={s.id}
                 className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition ${
                   pointee
-                    ? "cursor-not-allowed border-emerald-200 bg-emerald-50 opacity-80"
+                    ? "cursor-not-allowed border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 opacity-80"
                     : choisie
-                      ? "border-rotary bg-rotary-clair"
-                      : "border-slate-200 bg-white active:bg-slate-50"
+                      ? "border-lien bg-rotary-clair"
+                      : "border-bordure bg-surface active:bg-surface-2"
                 }`}
               >
                 <input
@@ -224,7 +226,7 @@ function Formulaire({
                 <span className="flex-1">
                   <span className="block font-semibold">{s.designation}</span>
                   <span className="block text-sm text-gris">{plage(s.heureDebut, s.heureFin)}</span>
-                  {pointee && <span className="mt-1 block text-sm font-semibold text-emerald-700">✓ Présence enregistrée à {heure(pointee)}</span>}
+                  {pointee && <span className="mt-1 block text-sm font-semibold text-emerald-700 dark:text-emerald-300">✓ Présence enregistrée à {heure(pointee)}</span>}
                 </span>
               </label>
             );
@@ -264,13 +266,13 @@ function Formulaire({
       )}
 
       {erreur && (
-        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-800">
+        <div role="alert" className="rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm font-medium text-red-800 dark:text-red-300">
           {erreur}
         </div>
       )}
 
       {seminaireId && sessions.length > 0 && sessions.every((s) => dejaPointees.has(s.id)) ? (
-        <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center font-semibold text-emerald-800">
+        <div role="status" className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 p-4 text-center font-semibold text-emerald-800 dark:text-emerald-300">
           Votre présence est déjà enregistrée pour toutes les sessions ouvertes de ce séminaire.
         </div>
       ) : (
@@ -280,7 +282,7 @@ function Formulaire({
           </BoutonPrincipal>
           {controleLieu && (
             <p className="-mt-2 flex items-start gap-1.5 text-xs text-gris">
-              <MapPin size={14} aria-hidden className="mt-px shrink-0 text-rotary" />
+              <MapPin size={14} aria-hidden className="mt-px shrink-0 text-lien" />
               Votre position sera demandée pour vérifier que vous êtes sur le lieu de la formation. Seule la distance au lieu est
               enregistrée.
             </p>
@@ -300,14 +302,14 @@ function Confirmation({ confirmation, onAutre }: { confirmation: PresenceConfirm
       <h1 className="mt-5 text-2xl font-bold">Présence validée</h1>
       <p className="mt-1 text-lg">{confirmation.nomComplet}</p>
 
-      <dl className="mt-6 w-full divide-y divide-slate-200 rounded-xl bg-white text-left shadow-sm">
+      <dl className="mt-6 w-full divide-y divide-bordure rounded-xl bg-surface text-left shadow-sm">
         <Ligne terme="Séminaire" valeur={confirmation.seminaire} />
         <Ligne terme="Session" valeur={confirmation.session} />
         <Ligne terme="Pointage" valeur={`${dateLongue(confirmation.heureDePointage)} à ${heure(confirmation.heureDePointage)}`} />
       </dl>
 
       <p className="mt-4 text-sm text-gris">Un email de confirmation vous sera envoyé.</p>
-      <button type="button" onClick={onAutre} className="mt-6 text-sm font-semibold text-rotary underline">
+      <button type="button" onClick={onAutre} className="mt-6 text-sm font-semibold text-lien underline">
         Valider une autre session
       </button>
       <style>{`@keyframes pop{0%{transform:scale(.4);opacity:0}80%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}`}</style>
@@ -359,7 +361,7 @@ function Message({
   texte: string;
   children?: React.ReactNode;
 }) {
-  const couleur = ton === "rouge" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700";
+  const couleur = ton === "rouge" ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300" : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300";
   return (
     <div className="flex flex-col items-center gap-3 pt-6 text-center">
       <div className={`flex size-20 items-center justify-center rounded-full text-4xl font-bold ${couleur}`}>{icone}</div>
@@ -373,11 +375,11 @@ function Message({
 function Chargement() {
   return (
     <div className="flex animate-pulse flex-col gap-4" aria-label="Chargement">
-      <div className="h-7 w-2/3 rounded bg-slate-200" />
-      <div className="h-12 rounded-lg bg-slate-200" />
-      <div className="h-12 rounded-lg bg-slate-200" />
-      <div className="h-20 rounded-xl bg-slate-200" />
-      <div className="h-14 rounded-xl bg-slate-300" />
+      <div className="h-7 w-2/3 rounded bg-neutre" />
+      <div className="h-12 rounded-lg bg-neutre" />
+      <div className="h-12 rounded-lg bg-neutre" />
+      <div className="h-20 rounded-xl bg-neutre" />
+      <div className="h-14 rounded-xl bg-bordure-forte" />
     </div>
   );
 }

@@ -49,7 +49,7 @@ export default function PageQrCodes() {
               titre: "Code",
               valeur: (q) => q.code,
               rendu: (q) => (
-                <Link href={`/admin/qrcodes/${q.code}`} className="font-mono text-xs font-semibold text-rotary hover:underline">
+                <Link href={`/admin/qrcodes/${q.code}`} className="font-mono text-xs font-semibold text-lien hover:underline">
                   {q.code}
                 </Link>
               ),
