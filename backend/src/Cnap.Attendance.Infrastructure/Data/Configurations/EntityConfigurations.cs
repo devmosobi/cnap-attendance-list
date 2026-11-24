@@ -68,6 +68,7 @@ public class QrCodeConfiguration : IEntityTypeConfiguration<QrCode>
         {
             t.HasCheckConstraint("ck_qr_codes_format", "code ~ '^[A-Z0-9]{20}$'");
             t.HasCheckConstraint("ck_qr_codes_statut", "statut IN ('Inactif', 'Actif', 'Desactive')");
+            t.HasCheckConstraint("ck_qr_codes_reserve_seminaire", "NOT reserve_au_seminaire OR seminaire_id IS NOT NULL");
             t.HasCheckConstraint("ck_qr_codes_actif_complet",
                 "statut <> 'Actif' OR (nom_complet IS NOT NULL AND email IS NOT NULL AND club_code IS NOT NULL AND seminaire_id IS NOT NULL AND date_activation IS NOT NULL)");
         });
@@ -77,6 +78,7 @@ public class QrCodeConfiguration : IEntityTypeConfiguration<QrCode>
         b.Property(x => x.NomComplet).HasMaxLength(200);
         b.Property(x => x.Email).HasMaxLength(254);
         b.Property(x => x.ClubCode).HasMaxLength(20);
+        b.Property(x => x.ReserveAuSeminaire).HasDefaultValue(false).ValueGeneratedNever();
         b.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
         b.Property(x => x.UpdatedAt).HasDefaultValueSql("now()");
         b.HasOne(x => x.Club).WithMany().HasForeignKey(x => x.ClubCode).OnDelete(DeleteBehavior.Restrict);

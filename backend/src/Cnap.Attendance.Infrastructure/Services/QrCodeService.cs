@@ -101,6 +101,44 @@ public class QrCodeService(AppDbContext db, TimeProvider horloge)
         await db.SaveChangesAsync(ct);
     }
 
+    /// <summary>
+    /// Génère des billets réservés à un séminaire actif : statut Inactif, rattachés au séminaire dès leur création.
+    /// Le premier scan ne proposera que les sessions de ce séminaire.
+    /// </summary>
+    public async Task<GenererQrCodesResultatDto> GenererAsync(GenererQrCodesRequest requete, CancellationToken ct)
+    {
+        var seminaire = await db.Seminaires.AsNoTracking().FirstOrDefaultAsync(s => s.Id == requete.SeminaireId, ct)
+            ?? throw new IntrouvableException("Séminaire introuvable.");
+        if (!seminaire.EstActif)
+            throw new RegleMetierException("Les QR Codes ne peuvent être générés que pour un séminaire actif.");
+
+        var codes = new HashSet<string>();
+        while (codes.Count < requete.Nombre)
+            codes.Add(CodeQr.Generer());
+        // 31^20 combinaisons : une collision avec un code existant est hautement improbable, mais vérifiée.
+        var existants = await db.QrCodes.Where(q => codes.Contains(q.Code)).Select(q => q.Code).ToListAsync(ct);
+        codes.ExceptWith(existants);
+        while (codes.Count < requete.Nombre)
+        {
+            var code = CodeQr.Generer();
+            if (!codes.Contains(code) && !await db.QrCodes.AnyAsync(q => q.Code == code, ct))
+                codes.Add(code);
+        }
+
+        var maintenant = horloge.GetUtcNow();
+        db.QrCodes.AddRange(codes.Select(c => new QrCode
+        {
+            Code = c,
+            Statut = QrCodeStatut.Inactif,
+            SeminaireId = seminaire.Id,
+            ReserveAuSeminaire = true,
+            CreatedAt = maintenant,
+            UpdatedAt = maintenant
+        }));
+        await db.SaveChangesAsync(ct);
+        return new GenererQrCodesResultatDto(codes.Count, codes.Order().ToList());
+    }
+
     /// <summary>Ajoute les codes absents avec le statut Inactif ; les codes déjà présents sont ignorés.</summary>
     public async Task<ImportResultatDto> ImporterAsync(Stream fichier, string nomFichier, CancellationToken ct)
     {
@@ -162,5 +200,6 @@ public class QrCodeService(AppDbContext db, TimeProvider horloge)
             .Select(q => new QrCodeListeDto(
                 q.Code, q.Statut.ToString(), q.NomComplet, q.Email, q.ClubCode,
                 q.Club != null ? q.Club.Nom : null, q.Club != null ? q.Club.Type : null, q.SeminaireId,
-                q.Seminaire != null ? q.Seminaire.Designation : null, q.DateActivation, q.Presences.Count(p => !p.EstInvalidee)));
+                q.Seminaire != null ? q.Seminaire.Designation : null, q.DateActivation, q.Presences.Count(p => !p.EstInvalidee),
+                q.ReserveAuSeminaire));
 }

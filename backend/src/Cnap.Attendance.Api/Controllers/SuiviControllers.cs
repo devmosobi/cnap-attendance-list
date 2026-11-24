@@ -56,6 +56,10 @@ public class QrCodesController(QrCodeService service) : ControllerBase
     public Task<QrCodeDetailDto> ModifierParticipant(string code, ModifierParticipantRequest requete, CancellationToken ct) =>
         service.ModifierParticipantAsync(code, requete, ct);
 
+    [HttpPost("generer")]
+    [Authorize(Policy = Politiques.Administrateur)]
+    public Task<GenererQrCodesResultatDto> Generer(GenererQrCodesRequest requete, CancellationToken ct) => service.GenererAsync(requete, ct);
+
     [HttpPost("import")]
     [Authorize(Policy = Politiques.Administrateur)]
     [RequestSizeLimit(5 * 1024 * 1024)]

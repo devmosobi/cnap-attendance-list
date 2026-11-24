@@ -21,6 +21,18 @@ public class CodeQrTests
     [InlineData("2925AK7VAGNBS34PQ'--")]
     public void Normaliser_rejette_les_codes_invalides(string? brut) =>
         Assert.Null(CodeQr.Normaliser(brut));
+
+    [Fact]
+    public void Generer_produit_des_codes_valides_sans_caracteres_ambigus()
+    {
+        var codes = Enumerable.Range(0, 500).Select(_ => CodeQr.Generer()).ToList();
+        Assert.All(codes, c =>
+        {
+            Assert.Equal(c, CodeQr.Normaliser(c));
+            Assert.DoesNotContain(c, x => "01OIL".Contains(x));
+        });
+        Assert.Equal(codes.Count, codes.Distinct().Count());
+    }
 }
 
 public class MasquageEmailTests

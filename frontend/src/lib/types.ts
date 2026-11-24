@@ -63,6 +63,8 @@ export type QrCodeListe = {
   seminaire: string | null;
   dateActivation: string | null;
   nombrePresences: number;
+  /** Billet généré pour ce séminaire : il ne permet de pointer que ses sessions. */
+  reserveAuSeminaire: boolean;
 };
 export type PresenceHistorique = {
   id: string;
@@ -75,7 +77,8 @@ export type PresenceHistorique = {
   estInvalidee: boolean;
   motifInvalidation: string | null;
 };
-export type QrCodeDetail = Omit<QrCodeListe, "nombrePresences" | "typeClub"> & { presences: PresenceHistorique[] };
+export type QrCodeDetail = Omit<QrCodeListe, "nombrePresences" | "typeClub" | "reserveAuSeminaire"> & { presences: PresenceHistorique[] };
+export type GenerationResultat = { nombre: number; codes: string[] };
 export type ImportResultat = { lignes: number; crees: number; existants: number; erreurs: string[]; misAJour: number };
 export type PresenceListe = {
   id: string;

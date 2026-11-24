@@ -39,7 +39,7 @@ const FORMAT_DATE = new Intl.DateTimeFormat("fr-FR", {
 
 const texteCellule = (v: ValeurCellule) => (v === null || v === undefined ? "" : v instanceof Date ? FORMAT_DATE.format(v) : String(v));
 
-function horodatage() {
+export function horodatage() {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
@@ -109,7 +109,7 @@ export async function exporterXlsx(doc: DocumentExport, autresFeuilles: FeuilleE
 
 let logoCache: Promise<string | null> | null = null;
 
-function chargerLogo(): Promise<string | null> {
+export function chargerLogo(): Promise<string | null> {
   logoCache ??= fetch("/logo-cnap.jpeg")
     .then((r) => (r.ok ? r.blob() : null))
     .then(

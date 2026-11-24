@@ -2,6 +2,7 @@
 
 import { RefreshCw, Sheet } from "lucide-react";
 import { useRef, useState } from "react";
+import { SelecteurSeminaire, useFiltreSeminaire } from "@/components/filtre-seminaire";
 import { GraphiqueBarres } from "@/components/graphique-barres";
 import { RapportLieuCarte, pourcentage, totalInvalidees, totauxLieu } from "@/components/rapport-lieu";
 import { TableDonnees } from "@/components/table-donnees";
@@ -10,7 +11,7 @@ import { construireQuery } from "@/lib/api";
 import { exporterPdfSections, type SectionPdf } from "@/lib/export";
 import { useDonnees } from "@/lib/hooks";
 import { LIBELLES_RESULTAT } from "@/lib/lieu";
-import type { RapportLieu, RapportLigne, ResultatPosition, Seminaire } from "@/lib/types";
+import type { RapportLieu, RapportLigne, ResultatPosition } from "@/lib/types";
 
 type DefinitionRapport = { titre: string; unite: string; colonne: string; nomFichier: string; libelleAxe?: (libelle: string) => string };
 
@@ -25,14 +26,15 @@ const RAPPORTS = {
 } satisfies Record<string, DefinitionRapport>;
 
 export default function TableauDeBord() {
-  const [seminaireId, setSeminaireId] = useState("");
-  const seminaires = useDonnees<Seminaire[]>("/api/admin/seminaires");
-  const q = construireQuery({ seminaireId });
-  const sessions = useDonnees<RapportLigne[]>(`/api/admin/rapports/presences-par-session${q}`);
+  // Premier séminaire actif sélectionné par défaut ; les rapports filtrés attendent ce choix.
+  const filtre = useFiltreSeminaire();
+  const q = construireQuery({ seminaireId: filtre.seminaireId });
+  const rapport = (chemin: string) => (filtre.pret ? `/api/admin/rapports/${chemin}${q}` : null);
+  const sessions = useDonnees<RapportLigne[]>(rapport("presences-par-session"));
   const parSeminaire = useDonnees<RapportLigne[]>("/api/admin/rapports/inscrits-par-seminaire");
-  const types = useDonnees<RapportLigne[]>(`/api/admin/rapports/inscrits-par-type-club${q}`);
-  const clubs = useDonnees<RapportLigne[]>(`/api/admin/rapports/inscrits-par-club${q}`);
-  const lieu = useDonnees<RapportLieu[]>(`/api/admin/rapports/presences-par-lieu${q}`);
+  const types = useDonnees<RapportLigne[]>(rapport("inscrits-par-type-club"));
+  const clubs = useDonnees<RapportLigne[]>(rapport("inscrits-par-club"));
+  const lieu = useDonnees<RapportLieu[]>(rapport("presences-par-lieu"));
 
   const graphiqueSessions = useRef<HTMLDivElement>(null);
   const graphiqueSeminaires = useRef<HTMLDivElement>(null);
@@ -43,7 +45,7 @@ export default function TableauDeBord() {
   const [captureClaire, setCaptureClaire] = useState(false);
   const [erreurExport, setErreurExport] = useState<string | null>(null);
 
-  const nomSeminaire = seminaires.donnees?.find((s) => s.id === seminaireId)?.designation;
+  const nomSeminaire = filtre.seminaire?.designation;
 
   const recharger = () => {
     sessions.recharger();
@@ -126,14 +128,7 @@ export default function TableauDeBord() {
         description="Participants et présences en temps réel (présences invalidées et QR Codes sans présence exclus)."
         actions={
           <>
-            <select className="champ w-auto" value={seminaireId} onChange={(e) => setSeminaireId(e.target.value)} aria-label="Filtrer par séminaire">
-              <option value="">Tous les séminaires</option>
-              {seminaires.donnees?.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.designation}
-                </option>
-              ))}
-            </select>
+            <SelecteurSeminaire filtre={filtre} />
             <Bouton variante="secondaire" onClick={recharger}>
               <RefreshCw size={16} aria-hidden /> Actualiser
             </Bouton>

@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { Ban, Eye, RefreshCw, RotateCcw } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { BadgeStatutQr, libelleStatutQr } from "@/components/badge-statut-qr";
+import { GenererQrCodes, ImprimerQrCodes } from "@/components/billets-qrcodes";
 import { CodesSansSession } from "@/components/codes-sans-session";
+import { SelecteurSeminaire, useFiltreSeminaire } from "@/components/filtre-seminaire";
 import { ImportFichier } from "@/components/import-fichier";
 import { TableDonnees } from "@/components/table-donnees";
 import { ActionIcone, Alerte, Bouton, Carte, EnTete } from "@/components/ui";
-import { api } from "@/lib/api";
+import { api, construireQuery } from "@/lib/api";
 import { dateHeure } from "@/lib/format";
 import { libelleTypeClub } from "@/lib/clubs";
 import { useDonnees, useEstAdministrateur } from "@/lib/hooks";
@@ -16,8 +18,16 @@ import type { QrCodeListe } from "@/lib/types";
 
 export default function PageQrCodes() {
   const estAdmin = useEstAdministrateur();
-  const { donnees, erreur, chargement, recharger } = useDonnees<QrCodeListe[]>("/api/admin/qrcodes");
+  const filtre = useFiltreSeminaire();
+  // Filtre séminaire : codes générés pour ce séminaire ou activés dans ce séminaire (les codes importés non utilisés n'en ont pas).
+  const { donnees, erreur, chargement, recharger } = useDonnees<QrCodeListe[]>(
+    filtre.pret ? `/api/admin/qrcodes${construireQuery({ seminaireId: filtre.seminaireId })}` : null,
+  );
   const [message, setMessage] = useState<string | null>(null);
+  const nonUtilises = useMemo(
+    () => (filtre.seminaireId ? (donnees ?? []).filter((q) => q.statut === "Inactif" && q.seminaireId === filtre.seminaireId).map((q) => q.code) : []),
+    [donnees, filtre.seminaireId],
+  );
 
   const changerActivation = async (q: QrCodeListe, desactiver: boolean) => {
     setMessage(null);
@@ -33,19 +43,24 @@ export default function PageQrCodes() {
     <>
       <EnTete
         titre="QR Codes"
-        description="Billets et participants inscrits."
+        description="Billets et participants inscrits. Le filtre séminaire montre les codes générés pour ce séminaire ou activés dans ce séminaire."
         actions={
-          estAdmin && (
-            <>
-              <CodesSansSession onTermine={recharger} />
-              <ImportFichier
-                titre="Importer des QR Codes"
-                chemin="/api/admin/qrcodes/import"
-                consigne="Une colonne « Code » (20 caractères) ; les autres colonnes sont ignorées. Les codes déjà présents sont ignorés."
-                onTermine={recharger}
-              />
-            </>
-          )
+          <>
+            <SelecteurSeminaire filtre={filtre} />
+            {estAdmin && (
+              <>
+                <GenererQrCodes seminaires={filtre.seminaires} seminaireId={filtre.seminaireId} onTermine={recharger} />
+                <ImprimerQrCodes codes={nonUtilises} seminaire={filtre.seminaire} />
+                <CodesSansSession onTermine={recharger} />
+                <ImportFichier
+                  titre="Importer des QR Codes"
+                  chemin="/api/admin/qrcodes/import"
+                  consigne="Une colonne « Code » (20 caractères) ; les autres colonnes sont ignorées. Les codes déjà présents sont ignorés."
+                  onTermine={recharger}
+                />
+              </>
+            )}
+          </>
         }
       />
       {message && (
@@ -57,9 +72,9 @@ export default function PageQrCodes() {
         <TableDonnees
           lignes={donnees}
           erreur={erreur}
-          chargement={chargement}
+          chargement={chargement || !filtre.pret}
           cleLigne={(q) => q.code}
-          titreExport="QR Codes"
+          titreExport={filtre.seminaire ? `QR Codes – ${filtre.seminaire.designation}` : "QR Codes"}
           nomFichier="qrcodes"
           triInitial={{ cle: "activation", sens: "desc" }}
           outils={
@@ -84,6 +99,7 @@ export default function PageQrCodes() {
             { cle: "club", titre: "Club", valeur: (q) => q.club ?? "", filtre: "liste" },
             { cle: "typeClub", titre: "Type de club", valeur: (q) => libelleTypeClub(q.typeClub), filtre: "liste" },
             { cle: "seminaire", titre: "Séminaire", valeur: (q) => q.seminaire ?? "", filtre: "liste" },
+            { cle: "billet", titre: "Billet", valeur: (q) => (q.reserveAuSeminaire ? "Généré (réservé)" : "Importé"), filtre: "liste" },
             {
               cle: "activation",
               titre: "Activation",

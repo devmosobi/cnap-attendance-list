@@ -141,6 +141,16 @@ public class ReinitialiserMotDePasseRequestValidator : AbstractValidator<Reiniti
     }
 }
 
+public class GenererQrCodesRequestValidator : AbstractValidator<GenererQrCodesRequest>
+{
+    public GenererQrCodesRequestValidator()
+    {
+        RuleFor(x => x.SeminaireId).NotEmpty().WithMessage("Veuillez sélectionner un séminaire.");
+        RuleFor(x => x.Nombre).InclusiveBetween(1, CodeQr.GenerationMaximum)
+            .WithMessage($"Le nombre de QR Codes doit être compris entre 1 et {CodeQr.GenerationMaximum}.");
+    }
+}
+
 public class LoginRequestValidator : AbstractValidator<LoginRequest>
 {
     public LoginRequestValidator()

@@ -3,10 +3,11 @@
 import { Ban, Eye, RefreshCw, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { BadgeLieu } from "@/components/badge-lieu";
+import { SelecteurSeminaire, useFiltreSeminaire } from "@/components/filtre-seminaire";
 import { BadgeValidite, libelleValidite } from "@/components/badge-validite";
 import { TableDonnees } from "@/components/table-donnees";
 import { ActionIcone, Alerte, Bouton, Carte, Champ, Confirmer, EnTete, Modale } from "@/components/ui";
-import { api } from "@/lib/api";
+import { api, construireQuery } from "@/lib/api";
 import { libelleTypeClub } from "@/lib/clubs";
 import { dateHeure } from "@/lib/format";
 import { useDonnees } from "@/lib/hooks";
@@ -16,7 +17,11 @@ import type { PresenceListe } from "@/lib/types";
 const MOTIFS = ["Pointage hors du site de la formation", "Pointage effectué pour un absent", "Erreur de pointage"];
 
 export default function PagePresences() {
-  const { donnees, erreur, chargement, recharger } = useDonnees<PresenceListe[]>("/api/admin/presences");
+  const filtre = useFiltreSeminaire();
+  const { donnees, erreur, chargement, recharger } = useDonnees<PresenceListe[]>(
+    filtre.pret ? `/api/admin/presences${construireQuery({ seminaireId: filtre.seminaireId })}` : null,
+  );
+  const titreExport = filtre.seminaire ? `Suivi des présences – ${filtre.seminaire.designation}` : "Suivi des présences";
   const [aInvalider, setAInvalider] = useState<PresenceListe | null>(null);
   const [aRetablir, setARetablir] = useState<PresenceListe | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -27,6 +32,7 @@ export default function PagePresences() {
       <EnTete
         titre="Suivi des présences"
         description="Filtrez sur n'importe quelle colonne ; les exports reprennent les filtres et le tri affichés. Une présence invalidée reste visible ici mais est exclue des statistiques et des exports."
+        actions={<SelecteurSeminaire filtre={filtre} />}
       />
       {message && (
         <div className="mb-4">
@@ -44,9 +50,9 @@ export default function PagePresences() {
         <TableDonnees
           lignes={donnees}
           erreur={erreur}
-          chargement={chargement}
+          chargement={chargement || !filtre.pret}
           cleLigne={(p) => p.id}
-          titreExport="Suivi des présences"
+          titreExport={titreExport}
           nomFichier="presences"
           triInitial={{ cle: "pointage", sens: "desc" }}
           exclureDesExports={{ exclure: (p) => p.estInvalidee, libelle: "présence(s) invalidée(s) exclue(s)" }}

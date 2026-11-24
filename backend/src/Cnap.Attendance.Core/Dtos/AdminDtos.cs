@@ -63,7 +63,8 @@ public record QrCodeListeDto(
     Guid? SeminaireId,
     string? Seminaire,
     DateTimeOffset? DateActivation,
-    int NombrePresences);
+    int NombrePresences,
+    bool ReserveAuSeminaire);
 
 public record QrCodeDetailDto(
     string Code,
@@ -92,6 +93,11 @@ public record PresenceHistoriqueDto(
 public record CodesSansSessionDto(int Total, int Desactives, int ADesactiver);
 
 public record OperationMasseDto(int Nombre);
+
+/// <summary>Génération de billets réservés à un séminaire actif.</summary>
+public record GenererQrCodesRequest(Guid SeminaireId, int Nombre);
+
+public record GenererQrCodesResultatDto(int Nombre, IReadOnlyList<string> Codes);
 
 public record ModifierParticipantRequest(string NomComplet, string Email, string ClubCode);
 

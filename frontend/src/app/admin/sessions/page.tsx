@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Pencil, Plus, Power, PowerOff, Trash } from "lucide-react";
+import { SelecteurSeminaire, useFiltreSeminaire } from "@/components/filtre-seminaire";
 import { TableDonnees } from "@/components/table-donnees";
 import { ActionIcone, Alerte, Badge, Bouton, Carte, Champ, Confirmer, EnTete, Modale } from "@/components/ui";
-import { api } from "@/lib/api";
+import { api, construireQuery } from "@/lib/api";
 import { dateHeure, depuisChampDateHeure, versChampDateHeure } from "@/lib/format";
 import { useDonnees } from "@/lib/hooks";
 import type { Seminaire, Session } from "@/lib/types";
@@ -20,8 +21,11 @@ type Formulaire = {
 };
 
 export default function PageSessions() {
-  const seminaires = useDonnees<Seminaire[]>("/api/admin/seminaires");
-  const { donnees, erreur, recharger } = useDonnees<Session[]>("/api/admin/sessions");
+  const filtre = useFiltreSeminaire();
+  const { seminaires } = filtre;
+  const { donnees, erreur, recharger } = useDonnees<Session[]>(
+    filtre.pret ? `/api/admin/sessions${construireQuery({ seminaireId: filtre.seminaireId })}` : null,
+  );
   const [formulaire, setFormulaire] = useState<Formulaire | null>(null);
   const [aSupprimer, setASupprimer] = useState<Session | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -38,8 +42,8 @@ export default function PageSessions() {
 
   const nouvelle = () =>
     setFormulaire({
-      // Séminaire actif proposé par défaut.
-      seminaireId: (seminaires.donnees?.find((s) => s.estActif) ?? seminaires.donnees?.[0])?.id ?? "",
+      // Séminaire du filtre proposé par défaut, sinon le premier séminaire actif.
+      seminaireId: (filtre.seminaire ?? seminaires.find((s) => s.estActif) ?? seminaires[0])?.id ?? "",
       designation: "",
       heureDebut: "",
       heureFin: "",
@@ -53,9 +57,12 @@ export default function PageSessions() {
         titre="Sessions de formation"
         description="Activez une session pour ouvrir le pointage, désactivez-la pour le fermer. Heures en heure de Côte d'Ivoire."
         actions={
-          <Bouton onClick={nouvelle} disabled={!seminaires.donnees?.length}>
-            <Plus size={16} aria-hidden /> Nouvelle session
-          </Bouton>
+          <>
+            <SelecteurSeminaire filtre={filtre} />
+            <Bouton onClick={nouvelle} disabled={!seminaires.length}>
+              <Plus size={16} aria-hidden /> Nouvelle session
+            </Bouton>
+          </>
         }
       />
       {(erreur || message) && (
@@ -68,7 +75,7 @@ export default function PageSessions() {
           lignes={donnees}
           chargement={!donnees && !erreur}
           cleLigne={(s) => s.id}
-          titreExport="Sessions de formation"
+          titreExport={filtre.seminaire ? `Sessions de formation – ${filtre.seminaire.designation}` : "Sessions de formation"}
           nomFichier="sessions"
           triInitial={{ cle: "debut", sens: "asc" }}
           colonnes={[
@@ -118,7 +125,7 @@ export default function PageSessions() {
       {formulaire && (
         <FormulaireSession
           valeurs={formulaire}
-          seminaires={seminaires.donnees ?? []}
+          seminaires={seminaires}
           onFermer={() => setFormulaire(null)}
           onEnregistre={() => {
             setFormulaire(null);

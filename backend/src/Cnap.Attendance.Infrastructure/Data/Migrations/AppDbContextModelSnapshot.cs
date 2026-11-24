@@ -301,6 +301,11 @@ namespace Cnap.Attendance.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("nom_complet");
 
+                    b.Property<bool>("ReserveAuSeminaire")
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("reserve_au_seminaire");
+
                     b.Property<Guid?>("SeminaireId")
                         .HasColumnType("uuid")
                         .HasColumnName("seminaire_id");
@@ -335,6 +340,8 @@ namespace Cnap.Attendance.Infrastructure.Data.Migrations
                             t.HasCheckConstraint("ck_qr_codes_actif_complet", "statut <> 'Actif' OR (nom_complet IS NOT NULL AND email IS NOT NULL AND club_code IS NOT NULL AND seminaire_id IS NOT NULL AND date_activation IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_qr_codes_format", "code ~ '^[A-Z0-9]{20}$'");
+
+                            t.HasCheckConstraint("ck_qr_codes_reserve_seminaire", "NOT reserve_au_seminaire OR seminaire_id IS NOT NULL");
 
                             t.HasCheckConstraint("ck_qr_codes_statut", "statut IN ('Inactif', 'Actif', 'Desactive')");
                         });

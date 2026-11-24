@@ -10,6 +10,12 @@ public class QrCode
     public Club? Club { get; set; }
     public Guid? SeminaireId { get; set; }
     public Seminaire? Seminaire { get; set; }
+
+    /// <summary>
+    /// Billet généré pour un séminaire : il est rattaché à ce séminaire dès sa création (SeminaireId)
+    /// et ne permet de pointer que ses sessions. Les codes importés restent libres (false).
+    /// </summary>
+    public bool ReserveAuSeminaire { get; set; }
     public DateTimeOffset? DateActivation { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }

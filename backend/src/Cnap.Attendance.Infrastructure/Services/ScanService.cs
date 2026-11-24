@@ -29,6 +29,9 @@ public partial class ScanService(AppDbContext db, TimeProvider horloge, ILogger<
             return new ScanEtatDto(qr.Code, qr.Statut.ToString(), null, [], [], []);
 
         var seminaires = await ChargerSeminairesOuvertsAsync(ct);
+        // Billet généré pour un séminaire : seules les sessions de ce séminaire sont proposées.
+        if (qr.ReserveAuSeminaire)
+            seminaires = seminaires.Where(s => s.Id == qr.SeminaireId).ToList();
 
         var clubs = qr.Statut == QrCodeStatut.Inactif
             ? await db.Clubs.AsNoTracking().Where(c => c.EstActif).OrderBy(c => c.Nom)
@@ -83,6 +86,8 @@ public partial class ScanService(AppDbContext db, TimeProvider horloge, ILogger<
             ?? throw new IntrouvableException(MessageCodeInvalide);
         if (qr.Statut == QrCodeStatut.Desactive)
             throw new RegleMetierException(MessageCodeDesactive);
+        if (qr.ReserveAuSeminaire && qr.SeminaireId != session.SeminaireId)
+            throw new RegleMetierException("Ce billet est réservé à un autre séminaire : il ne permet pas de pointer cette session.");
 
         var premierScan = false;
         if (qr.Statut == QrCodeStatut.Inactif)
