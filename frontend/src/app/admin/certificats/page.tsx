@@ -105,11 +105,13 @@ export default function PageCertificats() {
     try {
       const choisis = lignes.filter((l) => coches.has(l.cle)).sort((a, b) => comparateur.compare(a.nom, b.nom));
       // Aperçu sans sélection : quelques noms de la liste suffisent pour vérifier le placement.
-      const noms = (choisis.length > 0 || !apercu ? choisis : lignes.slice(0, 3)).map((l) =>
-        majuscules ? l.nom.toLocaleUpperCase("fr-FR") : l.nom,
-      );
+      const certificats = (choisis.length > 0 || !apercu ? choisis : lignes.slice(0, 3)).map((l) => ({
+        nom: majuscules ? l.nom.toLocaleUpperCase("fr-FR") : l.nom,
+        // Certificat de participation : le club du participant sous son nom.
+        sousTitre: onglet === "participant" ? l.club || null : null,
+      }));
       await exporterCertificatsPdf({
-        noms,
+        certificats,
         modele,
         reglage,
         apercu,
@@ -154,7 +156,7 @@ export default function PageCertificats() {
         </div>
         <p className="mb-3 text-sm text-gris">
           {onglet === "participant"
-            ? "Certificat de participation : participants ayant au moins une présence valide dans le séminaire. Cochez ceux dont le certificat doit être imprimé."
+            ? "Certificat de participation (nom et club en dessous) : participants ayant au moins une présence valide dans le séminaire. Cochez ceux dont le certificat doit être imprimé."
             : "Certificat de remerciements : clubs ayant au moins un participant présent dans le séminaire. Cochez ceux dont le certificat doit être imprimé."}
         </p>
         <TableDonnees
@@ -239,7 +241,7 @@ export default function PageCertificats() {
                 onChange={(e) => regler({ ...reglage, droite: Number(e.target.value) || 0 })}
               />
             </Champ>
-            <Champ libelle="Taille de la police (pt)" aide={`Réduite automatiquement jusqu'à ${modele.tailleMin} pt pour les noms longs.`}>
+            <Champ libelle="Taille de la police (pt)" aide={`Réduite automatiquement jusqu'à ${modele.tailleMin} pt pour les noms longs${modele.sousTitre ? ` ; ${modele.sousTitre.tailleNomMax} pt au plus lorsque le club est imprimé dessous` : ""}.`}>
               <input
                 type="number"
                 min={modele.tailleMin}
