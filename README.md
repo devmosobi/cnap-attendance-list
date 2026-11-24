@@ -103,7 +103,8 @@ l'échelle 100 %) :
 
 Rien n'est coché par défaut : on coche les certificats à imprimer. Le nom est imprimé en gras (30 pt, réduit pour les
 noms longs) sur le trait « Ce Certificat est attribué à : ». Sur le certificat de participation, le club du participant
-est imprimé sous son nom (12 pt) ; le nom est alors limité à 22 pt pour que les deux lignes tiennent au-dessus du trait. Les modèles sont des A4 portrait sur lesquels le certificat
+est imprimé sous son nom (12 pt) ; le nom est alors limité à 22 pt pour que les deux lignes tiennent au-dessus du trait.
+Une vague de certificats de participation est toujours imprimée triée par club, puis par nom (sans club en dernier). Les modèles sont des A4 portrait sur lesquels le certificat
 est tourné de 90° : le PDF reproduit ce sens, les feuilles se placent dans le bac comme le scan du modèle.
 
 - **Aperçu sur le modèle** : PDF avec le scan du modèle en fond (`frontend/public/certificats/`), pour contrôler le

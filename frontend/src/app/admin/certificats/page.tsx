@@ -15,6 +15,9 @@ type Onglet = TypeCertificat;
 type Ligne = { cle: string; nom: string; club: string; typeClub: TypeClub | null; nombre: number };
 
 const comparateur = new Intl.Collator("fr", { sensitivity: "base" });
+/** Ordre d'impression des certificats de participation : par club, puis par nom ; participants sans club en dernier. */
+const parClubPuisNom = (a: Ligne, b: Ligne) =>
+  Number(!a.club) - Number(!b.club) || comparateur.compare(a.club, b.club) || comparateur.compare(a.nom, b.nom);
 const cleReglage = (o: Onglet) => `cnap.certificat.reglage.${o}`;
 
 /** Réglage fin propre à l'imprimante, mémorisé dans ce navigateur pour chaque modèle. */
@@ -103,7 +106,7 @@ export default function PageCertificats() {
     setEnvoi(true);
     setErreur(null);
     try {
-      const choisis = lignes.filter((l) => coches.has(l.cle)).sort((a, b) => comparateur.compare(a.nom, b.nom));
+      const choisis = lignes.filter((l) => coches.has(l.cle)).sort(onglet === "participant" ? parClubPuisNom : (a, b) => comparateur.compare(a.nom, b.nom));
       // Aperçu sans sélection : quelques noms de la liste suffisent pour vérifier le placement.
       const certificats = (choisis.length > 0 || !apercu ? choisis : lignes.slice(0, 3)).map((l) => ({
         nom: majuscules ? l.nom.toLocaleUpperCase("fr-FR") : l.nom,
@@ -156,7 +159,7 @@ export default function PageCertificats() {
         </div>
         <p className="mb-3 text-sm text-gris">
           {onglet === "participant"
-            ? "Certificat de participation (nom et club en dessous) : participants ayant au moins une présence valide dans le séminaire. Cochez ceux dont le certificat doit être imprimé."
+            ? "Certificat de participation (nom et club en dessous) : participants ayant au moins une présence valide dans le séminaire. Cochez ceux dont le certificat doit être imprimé : l'impression est triée par club, puis par nom."
             : "Certificat de remerciements : clubs ayant au moins un participant présent dans le séminaire. Cochez ceux dont le certificat doit être imprimé."}
         </p>
         <TableDonnees
