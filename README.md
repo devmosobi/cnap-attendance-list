@@ -75,8 +75,42 @@ docker-compose.local.yml               surcharge pour tester sur Docker Desktop
   aucune session associée et permet de les **désactiver** (refusés au scan, réactivables) ou de les **supprimer**
   (définitif ; réimporter le fichier des codes pour les recréer). Un QR Code utilisé dans au moins une session, même
   invalidée, n'est jamais désactivé ni supprimé : la règle est appliquée par le serveur.
+- **Filtre séminaire** (tableau de bord, Présences, QR Codes, Sessions, Certificats) : le premier séminaire actif est
+  sélectionné par défaut. Le choix est ensuite conservé d'une page à l'autre pendant la session du navigateur.
 - Le **nombre d'inscrits** d'un séminaire se saisit à la main (Séminaires > Modifier). Il est repris dans la synthèse du
   PDF « Présents par club » avec le taux de participation.
+
+### Génération et impression des QR Codes
+
+- **QR Codes > Générer** (Administrateurs) : crée le nombre de billets demandé (1 000 au plus par génération) pour un
+  séminaire **actif**, en complément de l'import. Les codes sont tirés au hasard (générateur cryptographique, sans les
+  caractères ambigus 0, O, 1, I, L).
+- Un billet généré est **réservé à son séminaire** : au scan, seules les sessions de ce séminaire sont proposées, et le
+  serveur refuse toute autre session. Les codes importés restent utilisables pour tous les séminaires.
+- Avec un séminaire choisi dans le filtre, la page QR Codes affiche les codes générés pour ce séminaire ou activés
+  dans ce séminaire (les codes importés jamais utilisés n'apparaissent que sous « Tous les séminaires »).
+- **QR Codes > Imprimer** : PDF A4 des codes **non utilisés** du séminaire filtré, 25 billets par page (5 par ligne)
+  avec traits de coupe. Chaque billet porte le logo, le titre du séminaire, le QR Code et le code en clair. Le QR Code
+  encode l'adresse du domaine sur lequel la console est ouverte : générer le PDF depuis le domaine de la formation.
+
+### Certificats
+
+La page **Certificats** imprime les noms sur des certificats préimprimés (un certificat par page, à imprimer à
+l'échelle 100 %) :
+
+- **Participants** (certificat de participation) : ceux ayant au moins une présence valide dans le séminaire ;
+- **Clubs** (certificat de remerciements) : ceux ayant au moins un participant présent.
+
+Rien n'est coché par défaut : on coche les certificats à imprimer. Le nom est imprimé en gras (30 pt, réduit pour les
+noms longs) sur le trait « Ce Certificat est attribué à : ». Les modèles sont des A4 portrait sur lesquels le certificat
+est tourné de 90° : le PDF reproduit ce sens, les feuilles se placent dans le bac comme le scan du modèle.
+
+- **Aperçu sur le modèle** : PDF avec le scan du modèle en fond (`frontend/public/certificats/`), pour contrôler le
+  placement à l'écran.
+- **Réglage de l'impression** : décalage en mm et taille de police, mémorisés dans le navigateur pour chaque modèle,
+  pour compenser le décalage propre à une imprimante.
+- Les positions de référence, mesurées sur les scans `docs/certificat_participation.pdf` et
+  `docs/certificat_remerciement.pdf`, sont dans `frontend/src/lib/certificats-pdf.ts` (`MODELES_CERTIFICAT`).
 
 ### Contrôle du lieu de la formation
 

@@ -13,6 +13,7 @@ const MENU: { href: string; libelle: string; admin?: boolean }[] = [
   { href: "/admin", libelle: "Tableau de bord" },
   { href: "/admin/presences", libelle: "Présences" },
   { href: "/admin/presents-par-club", libelle: "Présents par club" },
+  { href: "/admin/certificats", libelle: "Certificats" },
   { href: "/admin/qrcodes", libelle: "QR Codes" },
   { href: "/admin/seminaires", libelle: "Séminaires" },
   { href: "/admin/sessions", libelle: "Sessions" },
