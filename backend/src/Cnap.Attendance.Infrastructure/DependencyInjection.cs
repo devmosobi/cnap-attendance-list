@@ -56,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<QrCodeService>();
         services.AddScoped<PresenceService>();
         services.AddScoped<RapportService>();
+        services.AddScoped<CertificatService>();
         services.AddScoped<ParametresSmtpService>();
         services.AddScoped<UtilisateurService>();
 

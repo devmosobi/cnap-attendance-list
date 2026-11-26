@@ -15,6 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Club> Clubs => Set<Club>();
     public DbSet<QrCode> QrCodes => Set<QrCode>();
     public DbSet<Presence> Presences => Set<Presence>();
+    public DbSet<CertificatImprime> CertificatsImprimes => Set<CertificatImprime>();
     public DbSet<EmailOutboxMessage> EmailOutbox => Set<EmailOutboxMessage>();
     public DbSet<ParametresSmtp> ParametresSmtp => Set<ParametresSmtp>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();

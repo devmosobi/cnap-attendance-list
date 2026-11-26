@@ -133,3 +133,4 @@ export type FileEmailStats = { enAttente: number; envoyes: number; echecs: numbe
 export type Utilisateur = { id: string; email: string; nomComplet: string; role: string; estActif: boolean; doitChangerMotDePasse: boolean };
 
 export const ROLES = ["Administrateur", "Gestionnaire"] as const;
+export type CertificatImprime = { type: "Participant" | "Club"; cle: string; imprimeLe: string; imprimePar: string };

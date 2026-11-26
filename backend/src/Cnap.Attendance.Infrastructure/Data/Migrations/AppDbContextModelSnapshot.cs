@@ -22,6 +22,53 @@ namespace Cnap.Attendance.Infrastructure.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Cnap.Attendance.Core.Entities.CertificatImprime", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("Cle")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("cle");
+
+                    b.Property<DateTimeOffset>("ImprimeLe")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("imprime_le");
+
+                    b.Property<string>("ImprimePar")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("imprime_par");
+
+                    b.Property<Guid>("SeminaireId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("seminaire_id");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("type");
+
+                    b.HasKey("Id")
+                        .HasName("pk_certificats_imprimes");
+
+                    b.HasIndex("SeminaireId", "Type", "Cle")
+                        .IsUnique()
+                        .HasDatabaseName("ux_certificats_imprimes");
+
+                    b.ToTable("certificats_imprimes", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_certificats_imprimes_type", "type IN ('Participant', 'Club')");
+                        });
+                });
+
             modelBuilder.Entity("Cnap.Attendance.Core.Entities.Club", b =>
                 {
                     b.Property<string>("Code")
@@ -811,6 +858,18 @@ namespace Cnap.Attendance.Infrastructure.Data.Migrations
                         .HasName("pk_asp_net_user_tokens");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("Cnap.Attendance.Core.Entities.CertificatImprime", b =>
+                {
+                    b.HasOne("Cnap.Attendance.Core.Entities.Seminaire", "Seminaire")
+                        .WithMany()
+                        .HasForeignKey("SeminaireId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_certificats_imprimes_seminaires_seminaire_id");
+
+                    b.Navigation("Seminaire");
                 });
 
             modelBuilder.Entity("Cnap.Attendance.Core.Entities.EmailOutboxMessage", b =>

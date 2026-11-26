@@ -112,6 +112,22 @@ public class PresenceConfiguration : IEntityTypeConfiguration<Presence>
     }
 }
 
+public class CertificatImprimeConfiguration : IEntityTypeConfiguration<CertificatImprime>
+{
+    public void Configure(EntityTypeBuilder<CertificatImprime> b)
+    {
+        b.ToTable("certificats_imprimes", t => t.HasCheckConstraint("ck_certificats_imprimes_type", "type IN ('Participant', 'Club')"));
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
+        b.Property(x => x.Type).HasConversion<string>().HasMaxLength(20);
+        b.Property(x => x.Cle).HasMaxLength(20).IsRequired();
+        b.Property(x => x.ImprimePar).HasMaxLength(254).IsRequired();
+        b.HasOne(x => x.Seminaire).WithMany().HasForeignKey(x => x.SeminaireId).OnDelete(DeleteBehavior.Cascade);
+        // Un certificat n'est marqué qu'une fois par séminaire ; une réimpression met à jour la date.
+        b.HasIndex(x => new { x.SeminaireId, x.Type, x.Cle }).IsUnique().HasDatabaseName("ux_certificats_imprimes");
+    }
+}
+
 public class EmailOutboxConfiguration : IEntityTypeConfiguration<EmailOutboxMessage>
 {
     public void Configure(EntityTypeBuilder<EmailOutboxMessage> b)

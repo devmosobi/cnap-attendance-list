@@ -146,6 +146,12 @@ public record PresentClubDto(
 /// <summary>Invalidees : présences invalidées de la session, exclues des autres comptes.</summary>
 public record RapportLieuDto(string Cle, string Session, int SurPlace, int HorsZone, int NonLocalise, int NonControle, int Invalidees);
 
+// Certificats
+public record CertificatImprimeDto(TypeCertificat Type, string Cle, DateTimeOffset ImprimeLe, string ImprimePar);
+
+/// <summary>Certificats à marquer comme imprimés, ou dont la marque est retirée.</summary>
+public record MarquageCertificatsRequest(Guid SeminaireId, TypeCertificat Type, IReadOnlyList<string> Cles);
+
 // Paramètres SMTP
 public record ParametresSmtpDto(
     string Hote,

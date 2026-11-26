@@ -41,7 +41,7 @@ export const MODELES_CERTIFICAT: Record<TypeCertificat, ModeleCertificat> = {
     largeurMax: 145,
     taillePolice: 30,
     tailleMin: 16,
-    couleur: [20, 20, 20],
+    couleur: [0, 0, 0],
     // Club en 12 pt juste au-dessus du trait (x ≈ 129,9) ; nom en 22 pt au plus, 5,8 mm plus haut (environ 15 mm disponibles).
     sousTitre: { ligneDeBase: 128.2, taille: 12, tailleMin: 8, ecart: 5.8, tailleNomMax: 22 },
   },
@@ -54,14 +54,32 @@ export const MODELES_CERTIFICAT: Record<TypeCertificat, ModeleCertificat> = {
     largeurMax: 145,
     taillePolice: 30,
     tailleMin: 16,
-    couleur: [20, 20, 20],
+    couleur: [0, 0, 0],
   },
 };
 
-/** Réglage fin propre à l'imprimante, dans le sens de lecture du certificat (mm). */
-export type Reglage = { haut: number; droite: number; taillePolice: number };
+/**
+ * Réglage fin propre à l'imprimante, dans le sens de lecture du certificat (mm).
+ * `graisse` : renfort du tracé, de 0 (Helvetica Bold seule) à 4 (très fort).
+ */
+export type Reglage = { haut: number; droite: number; taillePolice: number; graisse: number };
 
-export const reglageParDefaut = (modele: ModeleCertificat): Reglage => ({ haut: 0, droite: 0, taillePolice: modele.taillePolice });
+export const GRAISSES = ["Aucun", "Léger", "Moyen", "Fort", "Très fort"] as const;
+export const GRAISSE_PAR_DEFAUT = 2;
+
+export const reglageParDefaut = (modele: ModeleCertificat): Reglage => ({
+  haut: 0,
+  droite: 0,
+  taillePolice: modele.taillePolice,
+  graisse: GRAISSE_PAR_DEFAUT,
+});
+
+/**
+ * Épaisseur du contour ajouté autour des lettres (mm), proportionnelle à la taille de la police :
+ * au niveau « Moyen », environ 0,2 mm pour un nom en 30 pt. Rend le texte plus noir sur une imprimante
+ * à jet d'encre, sans boucher les lettres des petites tailles.
+ */
+const epaisseurContour = (graisse: number, taillePt: number) => Math.max(0, Math.min(graisse, GRAISSES.length - 1)) * taillePt * 0.0035;
 
 async function chargerImage(chemin: string): Promise<string> {
   const blob = await (await fetch(chemin)).blob();
@@ -74,7 +92,7 @@ async function chargerImage(chemin: string): Promise<string> {
 }
 
 /**
- * Un certificat par page : seul le nom est imprimé, en gras, à l'emplacement prévu sur le papier préimprimé.
+ * Un certificat par page : seul le nom est imprimé, en gras renforcé, à l'emplacement prévu sur le papier préimprimé.
  * `apercu` ajoute le scan du modèle en fond pour vérifier le placement à l'écran.
  */
 export async function exporterCertificatsPdf({
@@ -110,13 +128,18 @@ export async function exporterCertificatsPdf({
       taille -= 0.5;
       pdf.setFontSize(taille);
     }
-    pdf.text(texte, ligneDeBase, centre + pdf.getTextWidth(texte) / 2, { angle: 90 });
+    const contour = epaisseurContour(reglage.graisse, taille);
+    pdf.setLineWidth(contour);
+    pdf.text(texte, ligneDeBase, centre + pdf.getTextWidth(texte) / 2, { angle: 90, renderingMode: contour > 0 ? "fillThenStroke" : "fill" });
   };
 
   certificats.forEach(({ nom, sousTitre }, i) => {
     if (i > 0) pdf.addPage();
     if (fond) pdf.addImage(fond, "JPEG", 0, 0, largeurPage, hauteurPage, "fond", "FAST");
     pdf.setTextColor(...modele.couleur);
+    // Contour de la même couleur que le texte, à angles arrondis : les lettres s'épaississent sans pointes.
+    pdf.setDrawColor(...modele.couleur);
+    pdf.setLineJoin("round");
 
     const ligne = modele.sousTitre && sousTitre?.trim() ? modele.sousTitre : null;
     if (ligne) {

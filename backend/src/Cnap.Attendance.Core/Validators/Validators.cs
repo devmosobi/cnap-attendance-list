@@ -151,6 +151,20 @@ public class GenererQrCodesRequestValidator : AbstractValidator<GenererQrCodesRe
     }
 }
 
+public class MarquageCertificatsRequestValidator : AbstractValidator<MarquageCertificatsRequest>
+{
+    public const int Maximum = 5000;
+
+    public MarquageCertificatsRequestValidator()
+    {
+        RuleFor(x => x.SeminaireId).NotEmpty().WithMessage("Veuillez sélectionner un séminaire.");
+        RuleFor(x => x.Type).IsInEnum();
+        RuleFor(x => x.Cles).NotNull().NotEmpty().WithMessage("Aucun certificat sélectionné.")
+            .Must(c => c.Count <= Maximum).WithMessage($"{Maximum} certificats au plus par opération.");
+        RuleForEach(x => x.Cles).NotEmpty().MaximumLength(20);
+    }
+}
+
 public class LoginRequestValidator : AbstractValidator<LoginRequest>
 {
     public LoginRequestValidator()

@@ -109,8 +109,12 @@ est tourné de 90° : le PDF reproduit ce sens, les feuilles se placent dans le 
 
 - **Aperçu sur le modèle** : PDF avec le scan du modèle en fond (`frontend/public/certificats/`), pour contrôler le
   placement à l'écran.
-- **Réglage de l'impression** : décalage en mm et taille de police, mémorisés dans le navigateur pour chaque modèle,
-  pour compenser le décalage propre à une imprimante.
+- **Réglage de l'impression** : décalage en mm, taille de police et renfort du gras (contour ajouté aux lettres, utile
+  sur une imprimante à jet d'encre qui imprime pâle), mémorisés dans le navigateur pour chaque modèle.
+- **Impression par lots** : chaque certificat peut être marqué « Imprimé » (enregistré en base avec la date et
+  l'auteur, donc visible de tous les postes). La colonne « Statut » se filtre sur « À imprimer » ; « Cocher le prochain
+  lot » coche les N premiers certificats non imprimés dans l'ordre d'impression. Après chaque impression, la page
+  propose de marquer le lot ; « Retirer la marque » remet un certificat abîmé dans la liste à imprimer.
 - Les positions de référence, mesurées sur les scans `docs/certificat_participation.pdf` et
   `docs/certificat_remerciement.pdf`, sont dans `frontend/src/lib/certificats-pdf.ts` (`MODELES_CERTIFICAT`).
 

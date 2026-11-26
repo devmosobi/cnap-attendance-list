@@ -124,3 +124,24 @@ public class RapportsController(RapportService service) : ControllerBase
     public Task<List<RapportLigneDto>> InscritsParClub([FromQuery] Guid? seminaireId, CancellationToken ct) =>
         service.InscritsParClubAsync(seminaireId, ct);
 }
+
+[ApiController]
+[Route("api/admin/certificats")]
+[Authorize(Policy = Politiques.Console)]
+public class CertificatsController(CertificatService service) : ControllerBase
+{
+    [HttpGet("imprimes")]
+    public Task<List<CertificatImprimeDto>> ListerImprimes([FromQuery] Guid seminaireId, CancellationToken ct) =>
+        service.ListerImprimesAsync(seminaireId, ct);
+
+    [HttpPost("imprimes")]
+    public async Task<OperationMasseDto> Marquer(MarquageCertificatsRequest requete, CancellationToken ct)
+    {
+        var auteur = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue(ClaimTypes.Name) ?? "inconnu";
+        return new OperationMasseDto(await service.MarquerAsync(requete, auteur, ct));
+    }
+
+    [HttpPost("imprimes/retirer")]
+    public async Task<OperationMasseDto> RetirerMarque(MarquageCertificatsRequest requete, CancellationToken ct) =>
+        new(await service.RetirerMarqueAsync(requete, ct));
+}
