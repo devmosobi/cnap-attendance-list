@@ -109,7 +109,7 @@ est tourné de 90° : le PDF reproduit ce sens, les feuilles se placent dans le 
 
 - **Aperçu sur le modèle** : PDF avec le scan du modèle en fond (`frontend/public/certificats/`), pour contrôler le
   placement à l'écran.
-- **Réglage de l'impression** : décalage en mm, taille de police et renfort du gras (contour ajouté aux lettres, utile
+- **Réglage de l'impression** : décalage en mm, taille de police, couleur du texte (noir ou bleu très foncé) et renfort du gras (contour ajouté aux lettres, utile
   sur une imprimante à jet d'encre qui imprime pâle), mémorisés dans le navigateur pour chaque modèle.
 - **Impression par lots** : chaque certificat peut être marqué « Imprimé » (enregistré en base avec la date et
   l'auteur, donc visible de tous les postes). La colonne « Statut » se filtre sur « À imprimer » ; « Cocher le prochain

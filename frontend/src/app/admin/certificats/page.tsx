@@ -6,7 +6,7 @@ import { SelecteurSeminaire, useFiltreSeminaire } from "@/components/filtre-semi
 import { TableDonnees } from "@/components/table-donnees";
 import { Alerte, Badge, Bouton, Carte, Champ, EnTete } from "@/components/ui";
 import { api, construireQuery } from "@/lib/api";
-import { GRAISSES, MODELES_CERTIFICAT, exporterCertificatsPdf, reglageParDefaut, type Reglage, type TypeCertificat } from "@/lib/certificats-pdf";
+import { COULEURS_TEXTE, GRAISSES, MODELES_CERTIFICAT, estCouleurTexte, exporterCertificatsPdf, reglageParDefaut, type Reglage, type TypeCertificat } from "@/lib/certificats-pdf";
 import { libelleTypeClub } from "@/lib/clubs";
 import { dateHeure } from "@/lib/format";
 import { useDonnees } from "@/lib/hooks";
@@ -40,6 +40,7 @@ function lireReglage(o: Onglet): Reglage {
       droite: nombre(r.droite, 0),
       taillePolice: nombre(r.taillePolice, defaut.taillePolice),
       graisse: nombre(r.graisse, defaut.graisse),
+      couleur: estCouleurTexte(r.couleur) ? r.couleur : defaut.couleur,
     };
   } catch {
     return defaut;
@@ -374,7 +375,7 @@ export default function PageCertificats() {
             superposez-le à une feuille préimprimée à contre-jour. Si le nom est décalé, corrigez ci-dessous (réglage mémorisé dans ce
             navigateur).
           </p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Champ libelle="Monter le nom (mm)" aide="Valeur négative pour le descendre.">
               <input
                 type="number"
@@ -403,6 +404,19 @@ export default function PageCertificats() {
                 value={reglage.taillePolice}
                 onChange={(e) => regler({ ...reglage, taillePolice: Number(e.target.value) || modele.taillePolice })}
               />
+            </Champ>
+            <Champ libelle="Couleur du texte" aide="Le bleu très foncé peut rendre plus soutenu qu'un noir qui sort gris.">
+              <select
+                className="champ"
+                value={reglage.couleur}
+                onChange={(e) => regler({ ...reglage, couleur: estCouleurTexte(e.target.value) ? e.target.value : "noir" })}
+              >
+                {Object.entries(COULEURS_TEXTE).map(([cle, c]) => (
+                  <option key={cle} value={cle}>
+                    {c.libelle}
+                  </option>
+                ))}
+              </select>
             </Champ>
             <Champ libelle="Renfort du gras" aide="Épaissit le tracé des lettres si l'impression est pâle (jet d'encre).">
               <select className="champ" value={reglage.graisse} onChange={(e) => regler({ ...reglage, graisse: Number(e.target.value) })}>

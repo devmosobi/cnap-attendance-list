@@ -20,7 +20,6 @@ export type ModeleCertificat = {
   largeurMax: number;
   taillePolice: number;
   tailleMin: number;
-  couleur: [number, number, number];
   /**
    * Ligne sous le nom (le club du participant), juste au-dessus du trait (ligne de base `ligneDeBase`) ;
    * le nom est alors `ecart` mm plus haut, en `tailleNomMax` pt au plus pour tenir sous « attribué à : ».
@@ -41,7 +40,6 @@ export const MODELES_CERTIFICAT: Record<TypeCertificat, ModeleCertificat> = {
     largeurMax: 145,
     taillePolice: 30,
     tailleMin: 16,
-    couleur: [0, 0, 0],
     // Club en 12 pt juste au-dessus du trait (x ≈ 129,9) ; nom en 22 pt au plus, 5,8 mm plus haut (environ 15 mm disponibles).
     sousTitre: { ligneDeBase: 128.2, taille: 12, tailleMin: 8, ecart: 5.8, tailleNomMax: 22 },
   },
@@ -54,7 +52,6 @@ export const MODELES_CERTIFICAT: Record<TypeCertificat, ModeleCertificat> = {
     largeurMax: 145,
     taillePolice: 30,
     tailleMin: 16,
-    couleur: [0, 0, 0],
   },
 };
 
@@ -62,7 +59,15 @@ export const MODELES_CERTIFICAT: Record<TypeCertificat, ModeleCertificat> = {
  * Réglage fin propre à l'imprimante, dans le sens de lecture du certificat (mm).
  * `graisse` : renfort du tracé, de 0 (Helvetica Bold seule) à 4 (très fort).
  */
-export type Reglage = { haut: number; droite: number; taillePolice: number; graisse: number };
+export type Reglage = { haut: number; droite: number; taillePolice: number; graisse: number; couleur: CouleurTexte };
+
+/** Couleur d'impression du nom (et du club). */
+export const COULEURS_TEXTE = {
+  noir: { libelle: "Noir", rgb: [0, 0, 0] },
+  bleu: { libelle: "Bleu très foncé", rgb: [10, 30, 80] },
+} as const satisfies Record<string, { libelle: string; rgb: readonly [number, number, number] }>;
+export type CouleurTexte = keyof typeof COULEURS_TEXTE;
+export const estCouleurTexte = (v: unknown): v is CouleurTexte => typeof v === "string" && v in COULEURS_TEXTE;
 
 export const GRAISSES = ["Aucun", "Léger", "Moyen", "Fort", "Très fort"] as const;
 export const GRAISSE_PAR_DEFAUT = 2;
@@ -72,6 +77,7 @@ export const reglageParDefaut = (modele: ModeleCertificat): Reglage => ({
   droite: 0,
   taillePolice: modele.taillePolice,
   graisse: GRAISSE_PAR_DEFAUT,
+  couleur: "noir",
 });
 
 /**
@@ -136,9 +142,10 @@ export async function exporterCertificatsPdf({
   certificats.forEach(({ nom, sousTitre }, i) => {
     if (i > 0) pdf.addPage();
     if (fond) pdf.addImage(fond, "JPEG", 0, 0, largeurPage, hauteurPage, "fond", "FAST");
-    pdf.setTextColor(...modele.couleur);
+    const [r, v, b] = (COULEURS_TEXTE[reglage.couleur] ?? COULEURS_TEXTE.noir).rgb;
+    pdf.setTextColor(r, v, b);
     // Contour de la même couleur que le texte, à angles arrondis : les lettres s'épaississent sans pointes.
-    pdf.setDrawColor(...modele.couleur);
+    pdf.setDrawColor(r, v, b);
     pdf.setLineJoin("round");
 
     const ligne = modele.sousTitre && sousTitre?.trim() ? modele.sousTitre : null;
